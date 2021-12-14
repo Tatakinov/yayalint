@@ -13,10 +13,11 @@ Linuxでのコンパイル方法しか載せられませんが同じようにし
 1. lua5.4
 2. lpeglabel
 3. luafilesystem
-4. sol.hpp
-5. luastatic
+4. argparse
+5. sol.hpp
+6. luastatic
 
-4のsol.hppをinclude出来るようにしてconv/windows.ccをコンパイルしてstatic-library(windows.a)を作ります。
+5のsol.hppをinclude出来るようにしてconv/windows.ccをコンパイルしてstatic-library(windows.a)を作ります。
 
 ```
 clang++ -std=c++17 -I /path/to/sol windows.cc -c -o windows.o
