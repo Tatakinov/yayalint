@@ -28,8 +28,7 @@ llvm-ar r windows.a windows.o
 コンパイルが終わったらluastaticを使って次のコマンドを打ち込みます。
 
 ```
-CC= luastatic yayalint.lua func_list.lua class/*.lua conv/*.lua
-string_buffer/*.lua conv/windows.a lfs.a lpeglabel.a lua54.a
+CC= luastatic yayalint.lua class/*.lua conv/*.lua string_buffer/*.lua relabel.lua func_list.lua argparse.lua conv/conv_windows.a lfs.a lpeglabel.a lua54.a
 ```
 
 yayalint.luastatic.cが出来上がるのでclangでコンパイル
