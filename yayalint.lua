@@ -17,8 +17,8 @@ if DirSep == "\\" then
 end
 
 local Ascii   = Lpeg.R("\x00\x7f")
-local NumberZ = Lpeg.S("+-")^-1 * (Lpeg.P("0") + (Lpeg.R("19") * Lpeg.R("09") ^ 0))
-local NumberX = Lpeg.P("0x") * (Lpeg.R("09") + Lpeg.R("af"))  ^ 1
+local NumberZ = Lpeg.S("+-") ^ -1 * (Lpeg.P("0") + (Lpeg.R("19") * Lpeg.R("09") ^ 0))
+local NumberX = Lpeg.S("+-") ^ -1 * Lpeg.P("0x") * (Lpeg.R("09") + Lpeg.R("af"))  ^ 1
 local Number  = Lpeg.Cg(NumberX + (NumberZ * (Lpeg.P(".") * Lpeg.R("09") ^ 1) ^ -1), "num")
 local MBHead  = Lpeg.R("\xc2\xf4")
 local MBData  = Lpeg.R("\x80\xbf")
@@ -29,8 +29,8 @@ local Space   = Lpeg.S(" \t") + Lpeg.P("/\x0a") + Comment2
 local Comment1  = (Lpeg.P("//") * Char ^ 1 * NL)
 local Sep     = Lpeg.P("\x0a") + Comment1
 local Sep2    = Lpeg.P(";")
-local SepEx   = Sep + Space
 local Empty   = (Space + (Lpeg.P("//") * Char ^ 0)) ^ 0 * NL
+local SepEx   = (Sep + Empty + Space)
 
 local Reserve = Lpeg.P("if") + Lpeg.P("elseif") + Lpeg.P("else") + Lpeg.P("case") + Lpeg.P("when") + Lpeg.P("others") + Lpeg.P("switch") + Lpeg.P("while") + Lpeg.P("for") + Lpeg.P("break") + Lpeg.P("continue") + Lpeg.P("return") + Lpeg.P("foreach")
 local ArithmeticOperator  = Lpeg.S("+-*/%")
@@ -40,7 +40,7 @@ local AssignmentOperator  = Lpeg.P("=") + Lpeg.P(":=") + Lpeg.P("+=") + Lpeg.P("
 local Operator  = Lpeg.S("()[]&") + Lpeg.P("++") + Lpeg.P("--") + ComparisonOperator + Lpeg.P("_in_") + Lpeg.P("!_in_") + LogicalOperator + AssignmentOperator
 local InvalidName = Lpeg.S(" !\"#$%&()+,-*/:;<=>?@[]'{|}\t")
 local InvalidNameHead = Lpeg.R("09") + InvalidName
-local Name  = ((Lpeg.B( - InvalidNameHead) * (Lpeg.B(- InvalidName) * Char) ^ 1) - (Reserve * -1))
+local Name  = ((Lpeg.B( - (InvalidNameHead + (Reserve * (-1 + InvalidName + Sep)))) * (Lpeg.B(- InvalidName) * Char) ^ 1))
 
 local ScopeBegin  = Lpeg.P("{")
 local ScopeEnd    = Lpeg.P("}")
@@ -204,6 +204,7 @@ local WhenCondition = Lpeg.Ct(Lpeg.Ct(Lpeg.Cg(Label, "name")) * ((Space ^ 0 * Lp
 
 local Scope1          = Lpeg.V("scope1")
 local Scope2          = Lpeg.V("scope2")
+local ScopeInner      = Lpeg.V("scopeinner")
 local ScopeParallel   = Lpeg.V("scopeparallel")
 local ScopeIf         = Lpeg.V("scopeif")
 local ScopeIfIf       = Lpeg.V("scopeifif")
@@ -221,20 +222,21 @@ local ScopeSwitch     = Lpeg.V("scopeswitch")
 local OneLineExpression = Expression
 local ScopeTbl  = {
   scope1    = Lpeg.Ct((Lpeg.Cg(Alternative, "alter") * SepEx ^ 0 * Lpeg.P(":") * SepEx ^ 0) ^ -1 * Scope2),
-  scope2    = Lpeg.Ct(ScopeBegin * ((SepEx + Sep2) ^ 0 * (Lpeg.Ct(ScopeParallel)
+  scope2    = ScopeBegin * Lpeg.Ct(ScopeInner ^ 0) * (SepEx + Sep2) ^ 0 * ScopeEnd,
+  scopeinner  = ((SepEx + Sep2) ^ 0 * (Lpeg.Ct(ScopeParallel)
   + Lpeg.Ct(Space ^ 0 * Lpeg.Ct(Lpeg.Cg((Scope1), "scope")) * Space ^ 0) + Lpeg.Ct(ScopeIf) + Lpeg.Ct(ScopeWhile) + Lpeg.Ct(ScopeFor) + Lpeg.Ct(ScopeForeach) + Lpeg.Ct(ScopeCase) + Lpeg.Ct(ScopeSwitch) + AlternativeSep
   + (Space ^ 0 * Lpeg.Ct(Expression) * Space ^ 0)
-  + Empty) * (SepEx + Sep2) ^ 0) ^ 0 * (SepEx + Sep2) ^ 0 * ScopeEnd),
+  + Empty) * (SepEx + Sep2) ^ 0),
   scopeparallel = Lpeg.Ct((Lpeg.P("parallel") + Lpeg.P("void")) * SepEx ^ 1 * Lpeg.Cg(Lpeg.Ct(Expression), "parallel")),
-  scopeif   = ScopeIfIf * (SepEx ^ 0 * ScopeIfElseIf) ^ 0 * (SepEx ^ 0 * ScopeIfElse) ^ -1,
-  scopeifif = Lpeg.Ct(Space ^ 0 * Lpeg.P("if") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * Lpeg.Cg(SepEx ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression * (Sep + Sep2) ^ 0)), "scope_if")),
+  scopeif   = ScopeIfIf * ((SepEx + Sep2) ^ 0 * ScopeIfElseIf) ^ 0 * ((SepEx + Sep2) ^ 0 * ScopeIfElse) ^ -1,
+  scopeifif = Lpeg.Ct(Space ^ 0 * Lpeg.P("if") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * Lpeg.Cg((SepEx + Sep2) ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression * (Sep + Sep2) ^ 0)), "scope_if")),
   scopeifelseif = Lpeg.Ct(Space ^ 0 * Lpeg.P("elseif") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * Lpeg.Cg(SepEx ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)), "scope_elseif")),
   scopeifelse = Lpeg.Ct(Space ^ 0 * Lpeg.P("else") * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)) + SepEx ^ 0 * Scope1, "scope_else")),
   scopewhile  = Lpeg.Ct(Space ^ 0 * Lpeg.P("while") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * Expression) + (Space ^ 0 * Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_while")),
-  scopefor  = Lpeg.Ct(Space ^ 0 * Lpeg.P("for") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * ForCondition) + (Space ^ 0 * Lpeg.P("(") * ForCondition * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_for")),
+  scopefor  = Lpeg.Ct(Space ^ 0 * Lpeg.P("for") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * ForCondition) + (Space ^ 0 * Lpeg.P("(") * ForCondition * Lpeg.P(")"))), "condition") * (SepEx + Sep2) ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_for")),
   scopeforeach  = Lpeg.Ct(Space ^ 0 * Lpeg.P("foreach") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * ForeachCondition) + (Space ^ 0 * Lpeg.P("(") * ForeachCondition * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_foreach")),
   scopecase   = ScopeCaseCase,
-  scopecasecase = Lpeg.Ct(Space ^ 0 * Lpeg.P("case") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(SepEx ^ 0 * Lpeg.P("{" ) * Lpeg.Ct((SepEx ^ 0 * ScopeCaseWhen) ^ 1 * (SepEx ^ 0 * ScopeCaseOthers) ^ -1) * SepEx ^ 0 * Lpeg.P("}"), "scope_case")),
+  scopecasecase = Lpeg.Ct(Space ^ 0 * Lpeg.P("case") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(SepEx ^ 0 * Lpeg.P("{" ) * Lpeg.Ct((SepEx ^ 0 * ScopeCaseWhen + (ScopeInner)) ^ 0 * (SepEx ^ 0 * ScopeCaseOthers) ^ -1 * Lpeg.Ct(ScopeInner ^ 0)) * SepEx ^ 0 * Lpeg.P("}"), "scope_case")),
   scopecasewhen = Lpeg.Ct(Space ^ 0 * Lpeg.P("when") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(WhenCondition + (Lpeg.P("(") * WhenCondition * Lpeg.P(")"))), "condition") * Lpeg.Cg(SepEx ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression * (Sep + Sep2) ^ 0)), "scope_when")),
   scopecaseothers = Lpeg.Ct(Space ^ 0 * Lpeg.P("others") * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)) + SepEx ^ 0 * Scope1, "scope_others")),
   scopeswitch = Lpeg.Ct(Space ^ 0 * Lpeg.P("switch") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_switch")),
@@ -243,6 +245,7 @@ local Scope = Lpeg.P({
   Scope1,
   scope1          = ScopeTbl.scope1,
   scope2          = ScopeTbl.scope2,
+  scopeinner      = ScopeTbl.scopeinner,
   scopeparallel   = ScopeTbl.scopeparallel,
   scopeif         = ScopeTbl.scopeif,
   scopeifif       = ScopeTbl.scopeifif,
@@ -261,6 +264,7 @@ local ScopeOuter = Lpeg.P({
   Scope2,
   scope1  = ScopeTbl.scope1,
   scope2  = ScopeTbl.scope2,
+  scopeinner      = ScopeTbl.scopeinner,
   scopeparallel   = ScopeTbl.scopeparallel,
   scopeif       = ScopeTbl.scopeif,
   scopeifif     = ScopeTbl.scopeifif,
@@ -288,6 +292,7 @@ local parser  = ArgParse("yayalint", "YAYA linter")
 parser:argument("path", "Path of the folder containing yaya.dll")
 parser:flag("-F --nofile")
 parser:flag("-s --nosyntaxerror")
+parser:flag("-w --nowarning")
 parser:flag("-f --nofunction")
 parser:flag("-u --nounused")
 parser:flag("-d --noundefined")
@@ -424,7 +429,7 @@ local function parse(path, filename, global_define)
   return t
 end
 
-local function recursive(scope, gv, upper, var_foreach, overwrite, filename, funcname, global)
+local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, filename, funcname, global)
   --[[
   if type(scope) ~= "table" then
     -- TODO warning
@@ -442,80 +447,96 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, filename, fun
   for _, line in ipairs(scope) do
     for i, col in ipairs(line) do
       if #col > 0 then
-        recursive({col}, gv, lv, nil, true, filename, funcname, global)
+        recursive({col}, gv, lv, nil, true, false, filename, funcname, global)
       end
       if col.scope then
-        recursive(col.scope[1], gv, lv, nil, false, filename, funcname, global)
+        recursive(col.scope[1], gv, lv, nil, false, false, filename, funcname, global)
       end
       if col.parallel then
-        recursive({col.parallel}, gv, lv, nil, true, filename, funcname, global)
+        recursive({col.parallel}, gv, lv, nil, true, false, filename, funcname, global)
       end
       if col.scope_if then
-        recursive({col.condition}, gv, lv, nil, true, filename, funcname, global)
-        recursive(col.scope_if[1], gv, lv, nil, false, filename, funcname, global)
+        recursive({col.condition}, gv, lv, nil, true, true, filename, funcname, global)
+        recursive(col.scope_if[1], gv, lv, nil, false, false, filename, funcname, global)
       end
       if col.scope_elseif then
-        recursive({col.condition}, gv, lv, nil, true, filename, funcname, global)
-        recursive(col.scope_elseif[1], gv, lv, nil, false, filename, funcname, global)
+        recursive({col.condition}, gv, lv, nil, true, true, filename, funcname, global)
+        recursive(col.scope_elseif[1], gv, lv, nil, false, false, filename, funcname, global)
       end
       if col.scope_else then
-        recursive(col.scope_else[1], gv, lv, nil, false, filename, funcname, global)
+        recursive(col.scope_else[1], gv, lv, nil, false, false, filename, funcname, global)
       end
       if col.scope_while then
-        recursive({col.condition}, gv, lv, nil, true, filename, funcname, global)
-        recursive(col.scope_while[1], gv, lv, nil, false, filename, funcname, global)
+        recursive({col.condition}, gv, lv, nil, true, true, filename, funcname, global)
+        recursive(col.scope_while[1], gv, lv, nil, false, true, filename, funcname, global)
       end
       if col.scope_for then
+        --[[
         local var = {}
         for k, v in pairs(lv) do
           var[k]  = v
         end
-        recursive({col.condition[1].init}, gv, var, nil, true, filename, funcname, global)
-        recursive({col.condition[1].condition}, gv, var, nil, true, filename, funcname, global)
-        recursive({col.condition[1].next}, gv, var, nil, true, filename, funcname, global)
-        recursive(col.scope_for[1], gv, var, nil, false, filename, funcname, global)
+        --]]
+        recursive({col.condition[1].init}, gv, lv, nil, true, false, filename, funcname, global)
+        recursive({col.condition[1].condition}, gv, lv, nil, true, true, filename, funcname, global)
+        recursive({col.condition[1].next}, gv, lv, nil, true, false, filename, funcname, global)
+        recursive(col.scope_for[1], gv, lv, nil, false, false, filename, funcname, global)
       end
       if col.scope_foreach then
-        recursive({{col.condition[1].array}}, gv, lv, nil, true, filename, funcname, global)
+        recursive({{col.condition[1].array}}, gv, lv, nil, true, true, filename, funcname, global)
+        --[[
         local var = {}
         for k, v in pairs(lv) do
           var[k]  = v
         end
-        recursive({{col.condition[1].var}}, gv, var, true, true, filename, funcname, global)
-        recursive(col.scope_foreach[1], gv, var, nil, false, filename, funcname, global)
+        --]]
+        recursive({{col.condition[1].var}}, gv, lv, true, true, false, filename, funcname, global)
+        recursive(col.scope_foreach[1], gv, lv, nil, false, false, filename, funcname, global)
       end
       if col.scope_case then
-        recursive({col.condition}, gv, lv, nil, true, filename, funcname, global)
-        local var = {}
-        for k, v in pairs(lv) do
-          var[k]  = v
-        end
-        for _, col in ipairs(col.scope_case) do
-          if col.scope_when then
-            recursive(col.scope_when[1], gv, var, nil, false, filename, funcname, global)
-          elseif col.others then
-            recursive(col.scope_others[1], gv, var, nil, false, filename, funcname, global)
+        recursive({col.condition}, gv, lv, nil, true, true, filename, funcname, global)
+        local doubt = false
+        for _, v in ipairs(col.scope_case) do
+          -- when節とothers節以外はネストが1つ深い
+          if #v > 0 then
+            doubt = true
+            break
           end
         end
+        if doubt then
+          if global then
+            if not(args.nowarning) then
+              output:append(table.concat({"case statement contains a clause that is neither a when clause nor others clause:", "", "at", filename, funcname}, OutputSep)):append(NewLine)
+            end
+          end
+        end
+        recursive({col.scope_case}, gv, lv, nil, false, false, filename, funcname, global)
+      end
+
+      if col.scope_when then
+        recursive(col.scope_when[1], gv, lv, nil, false, false, filename, funcname, global)
+      end
+      if col.scope_others then
+        recursive(col.scope_others[1], gv, lv, nil, false, false, filename, funcname, global)
       end
       if col.scope_switch then
-        recursive({col.condition}, gv, lv, nil, true, filename, funcname, global)
-        recursive(col.scope_switch[1], gv, lv, nil, false, filename, funcname, global)
+        recursive({col.condition}, gv, lv, nil, true, true, filename, funcname, global)
+        recursive(col.scope_switch[1], gv, lv, nil, false, false, filename, funcname, global)
       end
       if col.func then
-        recursive({col.func}, gv, lv, nil, true, filename, funcname, global)
+        recursive({col.func}, gv, lv, nil, true, true, filename, funcname, global)
       end
       if col.string then
         if type(col.string) == "table" then
-          recursive({col.string}, gv, lv, nil, true, filename, funcname, global)
+          recursive({col.string}, gv, lv, nil, true, true, filename, funcname, global)
         end
       end
       if col.index then
-        recursive({col.index}, gv, lv, nil, true, filename, funcname, global)
+        recursive({col.index}, gv, lv, nil, true, true, filename, funcname, global)
       end
       if col.l then
         if col.index then
-          recursive({col.index}, gv, lv, nil, true, filename, funcname, global)
+          recursive({col.index}, gv, lv, nil, true, true, filename, funcname, global)
         end
         local v = col.l
         if v ~= "_argc" and v ~= "_argv" then
@@ -528,7 +549,7 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, filename, fun
           if var_foreach then
             lv[v].write = true
           end
-          if overwrite then
+          if force_read then
             lv[v].read  = true
           end
           if line[i - 1] then
@@ -553,7 +574,7 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, filename, fun
                 end
               end
             end
-          elseif #line == 1 then
+          elseif #line == 1 and not(var_foreach)then
             lv[v].read = true
             if not(lv[v].write) then
               if global then
@@ -567,7 +588,7 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, filename, fun
       end
       if col.g then
         if col.index then
-          recursive({col.index}, gv, lv, nil, true, filename, global)
+          recursive({col.index}, gv, lv, nil, true, true, filename, global)
         end
         local v = col.g
         if not(FuncList[v]) then
@@ -577,8 +598,11 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, filename, fun
               write = false,
             }
           end
-          if overwrite then
+          if force_read then
             gv[v].read  = true
+          end
+          if var_foreach then
+            lv[v].write = true
           end
           if line[i - 1] then
             gv[v].read  = true
@@ -605,7 +629,7 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, filename, fun
                 end
               end
             end
-          elseif #line == 1 then
+          elseif #line == 1 and not(var_foreach)then
             gv[v].read = true
             if global and not(global[v].write) then
               if not(args.noundefined) and not(args.noglobal) then
@@ -643,7 +667,7 @@ local function interpret(data)
         }
       end
       gv[func.name].write = true
-      recursive(func.body, gv, {}, nil, false, file.filename, func.name)
+      recursive(func.body, gv, {}, nil, false, false, file.filename, func.name)
     end
   end
   --dump(gv)
@@ -656,7 +680,7 @@ local function interpret(data)
           output:append(table.concat({"unused function:", func.name, "at", file.filename}, OutputSep)):append(NewLine)
         end
       end
-      recursive(func.body, {}, {}, nil, false, file.filename, func.name, gv)
+      recursive(func.body, {}, {}, nil, false, false, file.filename, func.name, gv)
     end
   end
   for k, v in pairs(gv) do
