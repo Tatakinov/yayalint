@@ -51,11 +51,12 @@ Arguments:
 Options:
    -F, --nofile          ファイルが見つからないことを出力しない
    -s, --nosyntaxerror   構文エラーに関する情報を出力しない
+   -w, --nowarning       警告を出力しない
    -f, --nofunction      未使用の関数に関する情報を出力しない
    -u, --nounused        未使用の変数に関する情報を出力しない
    -d, --noundefined     未定義の変数に関する情報を出力しない
    -l, --nolocal         ローカル変数に関する情報を出力しない
-   -g, --noglobal        グローバル変数/関数に関する情報を出力しない
+   -g, --noglobal        グローバル変数に関する情報を出力しない
    -h, --help            ヘルプの表示
 ```
 
