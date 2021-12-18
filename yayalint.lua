@@ -429,6 +429,24 @@ local function parse(path, filename, global_define)
   return t
 end
 
+local function isSpecialLocalVariable(name)
+  local special = {
+    ["_argc"] = true,
+    ["_argv"] = true,
+  }
+  if special[name] then
+    return true
+  end
+  return false
+end
+
+local function isSpecialGlobalVariable(name)
+  if FuncList[name] then
+    return true
+  end
+  return false
+end
+
 local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, filename, funcname, global)
   --[[
   if type(scope) ~= "table" then
@@ -539,7 +557,7 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
           recursive({col.index}, gv, lv, nil, true, true, filename, funcname, global)
         end
         local v = col.l
-        if v ~= "_argc" and v ~= "_argv" then
+        if not(isSpecialLocalVariable(v)) then
           if lv[v] == nil then
             lv[v] = {
               read  = false,
@@ -591,7 +609,7 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
           recursive({col.index}, gv, lv, nil, true, true, filename, global)
         end
         local v = col.g
-        if not(FuncList[v]) then
+        if not(isSpecialGlobalVariable(v)) then
           if gv[v] == nil then
             gv[v] = {
               read  = false,
