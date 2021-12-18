@@ -8,9 +8,7 @@
 
 ## How to Build
 
-使うだけならlua.exeとか用意する方が楽かもしれません。
-
-Linuxでのコンパイル方法しか載せられませんが同じようにしてWindowsでもビルド出来ます。
+以下にWindowsでClang\+MSVCの組み合わせでコンパイルする場合の方法を載せます。
 
 用意するもの
 
@@ -39,10 +37,8 @@ CC= luastatic yayalint.lua class/*.lua conv/*.lua string_buffer/*.lua relabel.lu
 yayalint.luastatic.cが出来上がるのでclangでコンパイル
 
 ```
-clang -o yayalint conv/conv_windows.a lfs.a lpeglabel.a lua54.a
+clang -o yayalint.exe conv/conv_windows.a lfs.a lpeglabel.a lua54.a
 ```
-
-Windowsで同じようにやるならばClang\+MSVCの組み合わせでコンパイルするのがいいでしょう。
 
 ## 使い方
 
