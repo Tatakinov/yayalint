@@ -2,6 +2,10 @@
 
 伺かのSHIORI「YAYA」のlinterです。
 
+## Binary
+
+[ここ](https://tatakinov.github.io/yayalint/index.html)に置いてあります。
+
 ## How to Build
 
 使うだけならlua.exeとか用意する方が楽かもしれません。
@@ -43,7 +47,7 @@ Windowsで同じようにやるならばClang\+MSVCの組み合わせでコン�
 ## 使い方
 
 ```
-Usage: yayalint [-F] [-s] [-f] [-u] [-d] [-l] [-g] [-h] <path>
+Usage: yayalint [-F] [-s] [-w] [-f] [-u] [-d] [-l] [-g] [-h] <path>
 
 Arguments:
    path                  yaya.txtが置いてあるフォルダのパス
