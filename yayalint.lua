@@ -447,7 +447,12 @@ local function isSpecialGlobalVariable(name)
   return false
 end
 
-local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, filename, funcname, global)
+local function recursive(scope, gv, upper, filename, funcname, global, opt)
+  opt = opt or {
+    var_foreach = false,
+    overwrite   = false,
+    force_read  = false,
+  }
   --[[
   if type(scope) ~= "table" then
     -- TODO warning
@@ -455,7 +460,7 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
   end
   --]]
   local lv  = {}
-  if overwrite then
+  if opt.overwrite then
     lv  = upper
   else
     for k, v in pairs(upper) do
@@ -465,28 +470,41 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
   for _, line in ipairs(scope) do
     for i, col in ipairs(line) do
       if #col > 0 then
-        recursive({col}, gv, lv, nil, true, false, filename, funcname, global)
+        recursive({col}, gv, lv, filename, funcname, global, {
+          overwrite = true,
+        })
       end
       if col.scope then
-        recursive(col.scope[1], gv, lv, nil, false, false, filename, funcname, global)
+        recursive(col.scope[1], gv, lv, filename, funcname, global)
       end
       if col.parallel then
-        recursive({col.parallel}, gv, lv, nil, true, false, filename, funcname, global)
+        recursive({col.parallel}, gv, lv, filename, funcname, global, {
+          overwrite = true,
+        })
       end
       if col.scope_if then
-        recursive({col.condition}, gv, lv, nil, true, true, filename, funcname, global)
-        recursive(col.scope_if[1], gv, lv, nil, false, false, filename, funcname, global)
+        recursive({col.condition}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
+        recursive(col.scope_if[1], gv, lv, filename, funcname, global)
       end
       if col.scope_elseif then
-        recursive({col.condition}, gv, lv, nil, true, true, filename, funcname, global)
-        recursive(col.scope_elseif[1], gv, lv, nil, false, false, filename, funcname, global)
+        recursive({col.condition}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
+        recursive(col.scope_elseif[1], gv, lv, filename, funcname, global)
       end
       if col.scope_else then
-        recursive(col.scope_else[1], gv, lv, nil, false, false, filename, funcname, global)
+        recursive(col.scope_else[1], gv, lv, filename, funcname, global)
       end
       if col.scope_while then
-        recursive({col.condition}, gv, lv, nil, true, true, filename, funcname, global)
-        recursive(col.scope_while[1], gv, lv, nil, false, true, filename, funcname, global)
+        recursive({col.condition}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
+        recursive(col.scope_while[1], gv, lv, filename, funcname, global)
       end
       if col.scope_for then
         --[[
@@ -495,24 +513,40 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
           var[k]  = v
         end
         --]]
-        recursive({col.condition[1].init}, gv, lv, nil, true, false, filename, funcname, global)
-        recursive({col.condition[1].condition}, gv, lv, nil, true, true, filename, funcname, global)
-        recursive({col.condition[1].next}, gv, lv, nil, true, false, filename, funcname, global)
-        recursive(col.scope_for[1], gv, lv, nil, false, false, filename, funcname, global)
+        recursive({col.condition[1].init}, gv, lv, filename, funcname, global, {
+          overwrite = true,
+        })
+        recursive({col.condition[1].condition}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
+        recursive({col.condition[1].next}, gv, lv, filename, funcname, global, {
+          overwrite = true,
+        })
+        recursive(col.scope_for[1], gv, lv, filename, funcname, global)
       end
       if col.scope_foreach then
-        recursive({{col.condition[1].array}}, gv, lv, nil, true, true, filename, funcname, global)
+        recursive({{col.condition[1].array}}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
         --[[
         local var = {}
         for k, v in pairs(lv) do
           var[k]  = v
         end
         --]]
-        recursive({{col.condition[1].var}}, gv, lv, true, true, false, filename, funcname, global)
-        recursive(col.scope_foreach[1], gv, lv, nil, false, false, filename, funcname, global)
+        recursive({{col.condition[1].var}}, gv, lv, filename, funcname, global, {
+          var_foreach = true,
+          overwrite   = true,
+        })
+        recursive(col.scope_foreach[1], gv, lv, filename, funcname, global)
       end
       if col.scope_case then
-        recursive({col.condition}, gv, lv, nil, true, true, filename, funcname, global)
+        recursive({col.condition}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
         local doubt = false
         for _, v in ipairs(col.scope_case) do
           -- when節とothers節以外はネストが1つ深い
@@ -528,33 +562,48 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
             end
           end
         end
-        recursive({col.scope_case}, gv, lv, nil, false, false, filename, funcname, global)
+        recursive({col.scope_case}, gv, lv, filename, funcname, global)
       end
 
       if col.scope_when then
-        recursive(col.scope_when[1], gv, lv, nil, false, false, filename, funcname, global)
+        recursive(col.scope_when[1], gv, lv, filename, funcname, global)
       end
       if col.scope_others then
-        recursive(col.scope_others[1], gv, lv, nil, false, false, filename, funcname, global)
+        recursive(col.scope_others[1], gv, lv, filename, funcname, global)
       end
       if col.scope_switch then
-        recursive({col.condition}, gv, lv, nil, true, true, filename, funcname, global)
-        recursive(col.scope_switch[1], gv, lv, nil, false, false, filename, funcname, global)
+        recursive({col.condition}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
+        recursive(col.scope_switch[1], gv, lv, filename, funcname, global)
       end
       if col.func then
-        recursive({col.func}, gv, lv, nil, true, true, filename, funcname, global)
+        recursive({col.func}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
       end
       if col.string then
         if type(col.string) == "table" then
-          recursive({col.string}, gv, lv, nil, true, true, filename, funcname, global)
+          recursive({col.string}, gv, lv, filename, funcname, global, {
+            overwrite   = true,
+            force_read  = true,
+          })
         end
       end
       if col.index then
-        recursive({col.index}, gv, lv, nil, true, true, filename, funcname, global)
+        recursive({col.index}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
       end
       if col.l then
         if col.index then
-          recursive({col.index}, gv, lv, nil, true, true, filename, funcname, global)
+          recursive({col.index}, gv, lv, filename, funcname, global, {
+            overwrite   = true,
+            force_read  = true,
+          })
         end
         local v = col.l
         if not(isSpecialLocalVariable(v)) then
@@ -564,10 +613,10 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
               write = false,
             }
           end
-          if var_foreach then
+          if opt.var_foreach then
             lv[v].write = true
           end
-          if force_read then
+          if opt.force_read then
             lv[v].read  = true
           end
           if line[i - 1] then
@@ -592,7 +641,7 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
                 end
               end
             end
-          elseif #line == 1 and not(var_foreach)then
+          elseif #line == 1 and not(opt.var_foreach)then
             lv[v].read = true
             if not(lv[v].write) then
               if global then
@@ -606,7 +655,10 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
       end
       if col.g then
         if col.index then
-          recursive({col.index}, gv, lv, nil, true, true, filename, global)
+          recursive({col.index}, gv, lv, filename, funcname, global, {
+            overwrite   = true,
+            force_read  = true,
+          })
         end
         local v = col.g
         if not(isSpecialGlobalVariable(v)) then
@@ -616,10 +668,10 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
               write = false,
             }
           end
-          if force_read then
+          if opt.force_read then
             gv[v].read  = true
           end
-          if var_foreach then
+          if opt.var_foreach then
             lv[v].write = true
           end
           if line[i - 1] then
@@ -647,7 +699,7 @@ local function recursive(scope, gv, upper, var_foreach, overwrite, force_read, f
                 end
               end
             end
-          elseif #line == 1 and not(var_foreach)then
+          elseif #line == 1 and not(opt.var_foreach)then
             gv[v].read = true
             if global and not(global[v].write) then
               if not(args.noundefined) and not(args.noglobal) then
@@ -685,7 +737,7 @@ local function interpret(data)
         }
       end
       gv[func.name].write = true
-      recursive(func.body, gv, {}, nil, false, false, file.filename, func.name)
+      recursive(func.body, gv, {}, file.filename, func.name)
     end
   end
   --dump(gv)
@@ -698,7 +750,7 @@ local function interpret(data)
           output:append(table.concat({"unused function:", func.name, "at", file.filename}, OutputSep)):append(NewLine)
         end
       end
-      recursive(func.body, {}, {}, nil, false, false, file.filename, func.name, gv)
+      recursive(func.body, {}, {}, file.filename, func.name, gv)
     end
   end
   for k, v in pairs(gv) do
