@@ -755,10 +755,10 @@ local function getFileList(path, filename, relative)
       if not(c == "/") and not(c == "\\") then
         dirname = dirname .. DirSep
       end
-      if lfs.attributes(path .. relative ..dirname) then
+      if Lfs.attributes(path .. relative ..dirname) then
         local function recursiveGetFiles(path, relative, dirname)
           for name in Lfs.dir(path .. relative .. dirname) do
-            local attr  = lfs.attributes(path .. relative .. dirname .. name)
+            local attr  = Lfs.attributes(path .. relative .. dirname .. name)
             if name == "." or name == ".." then
               -- NOP
             elseif attr.mode == "directory" then
