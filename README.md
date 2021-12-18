@@ -37,7 +37,7 @@ CC= luastatic yayalint.lua class/*.lua conv/*.lua string_buffer/*.lua relabel.lu
 yayalint.luastatic.cが出来上がるのでclangでコンパイル
 
 ```
-clang -o yayalint.exe conv/conv_windows.a lfs.a lpeglabel.a lua54.a
+clang -o yayalint.exe yayalint.luastatic.c conv/conv_windows.a lfs.a lpeglabel.a lua54.a
 ```
 
 ## 使い方
