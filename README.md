@@ -2,9 +2,11 @@
 
 伺かのSHIORI「YAYA」のlinterです。
 
-## Binary
+## バイナリ
 
-[ここ](https://tatakinov.github.io/yayalint/index.html)に置いてあります。
+Releaseからどうぞ。
+yayalint.zipはyayalint.exeとyayalint.bat、
+yayalint\_lua.zipはlua.exeとyayalint.luaと依存ファイル群が入っています。
 
 ## How to Build
 
