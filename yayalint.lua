@@ -98,9 +98,9 @@ local ExpressionInString  = Lpeg.P({
   exp11 = ((Lpeg.Ct(Lpeg.Cg(ExpOp11, "not")) * ExpSep) ^ -1 * ExpS12),
   exp12 = Lpeg.Ct(Number 
   + (String1_2 + String2_2) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index") ^ 0
-  + Lpeg.Cg(LocalVariable, "l") * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index") ^ 0
+  + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(LocalVariable, "l")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index") ^ 0
   + (Lpeg.P("(") * ExpSep * ExpS1 * ExpSep * Lpeg.P(")")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index") ^ 0
-  + (Lpeg.Cg(GlobalVariable, "g")
+  + ((Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(GlobalVariable, "g"))
   ---[[
   * ( ExpSep *
     (
@@ -147,9 +147,9 @@ local ExpTbl  =
   exp12 = Lpeg.Ct(Number 
   + StringV * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") ^ 0
   + Return + Break + Continue
-  + Lpeg.Cg(LocalVariable, "l") * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") ^ 0
+  + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(LocalVariable, "l")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") ^ 0
   + (Lpeg.P("(") * ExpSep * Exp1 * ExpSep * Lpeg.P(")")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") ^ 0
-  + (Lpeg.Cg(GlobalVariable, "g")* ( ExpSep * (Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") + ((Lpeg.P("(") * Lpeg.Cg(ExpSep * Lpeg.Ct(Exp1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(Exp1)) ^ 0, "func") ^ -1 * ExpSep * Lpeg.P(")"))))) ^ 0) + (Lpeg.P("(") * ExpSep * Exp1 * ExpSep * Lpeg.P(")"))),
+  + ((Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(GlobalVariable, "g")) * ( ExpSep * (Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") + ((Lpeg.P("(") * Lpeg.Cg(ExpSep * Lpeg.Ct(Exp1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(Exp1)) ^ 0, "func") ^ -1 * ExpSep * Lpeg.P(")"))))) ^ 0) + (Lpeg.P("(") * ExpSep * Exp1 * ExpSep * Lpeg.P(")"))),
   stringv = String1 + String2,
   string2 = String2_1 + String2_2,
   string2_1 = (Lpeg.P("<<") * StringSep1 * Lpeg.Cg(Lpeg.Ct(((Lpeg.P("%(") * ExpSep * (Exp1) * ExpSep * Lpeg.P(")")) + Lpeg.Ct(Lpeg.Cg((((NL)) + Lpeg.B( - (Lpeg.P("%(") + (StringSep1 * Lpeg.P(">>")))) * Char) ^ 1, "text"))) ^ 0), "string") * StringSep1 * Lpeg.P(">>")),
@@ -316,6 +316,28 @@ local function dump(t, indent)
   end
 end
 
+local function pos2linecol(t, data)
+  if type(t) == "table" then
+    for k, v in pairs(t) do
+      if type(v) == "table" then
+        pos2linecol(v, data)
+      end
+    end
+    if t.pos then
+      local pos   = t.pos
+      local line  = 1
+      -- + 1 は改行の分
+      while pos > (data[line] + 1) do
+        pos   = pos - (data[line] + 1)
+        line  = line + 1
+      end
+      t.line  = line
+      t.col   = pos
+      t.pos   = nil
+    end
+  end
+end
+
 local function parse(path, filename, global_define)
   local fh  = io.open(path .. filename, "rb")
   if not(fh) then
@@ -426,6 +448,11 @@ local function parse(path, filename, global_define)
     end
   end
   t.filename  = filename
+  local linecol = {}
+  for s in string.gmatch(data, "[^\x0a]*") do
+    table.insert(linecol, #s)
+  end
+  pos2linecol(t, linecol)
   return t
 end
 
@@ -624,7 +651,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             if not(lv[v].write) then
               if global then
                 if not(args.noundefined) and not(args.nolocal) then
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                  output:append(table.concat({"read undefined variable:", v, "at", filename, funcname, "line:", col.line}, OutputSep)):append(NewLine)
                 end
               end
             end
@@ -636,7 +664,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if not(lv[v].write) then
                 if global then
                   if not(args.noundefined) and not(args.nolocal) then
-                    output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                    --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                    output:append(table.concat({"read undefined variable:", v, "at", filename, funcname, "line:", col.line}, OutputSep)):append(NewLine)
                   end
                 end
               end
@@ -646,7 +675,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             if not(lv[v].write) then
               if global then
                 if not(args.noundefined) and not(args.nolocal) then
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                  output:append(table.concat({"read undefined variable:", v, "at", filename, funcname, "line:", col.line}, OutputSep)):append(NewLine)
                 end
               end
             end
@@ -678,7 +708,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             gv[v].read  = true
             if global and not(global[v].write) then
               if not(args.noundefined) and not(args.noglobal) then
-                output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                output:append(table.concat({"read undefined variable:", v, "at", filename, funcname, "line:", col.line}, OutputSep)):append(NewLine)
               end
             end
           elseif line[i + 1] then
@@ -687,7 +718,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if global then
                 if global[v].write and not(global[v].read) then
                   if not(args.noglobal) and not(args.nounused) then
-                    output:append(table.concat({"unused variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                    --output:append(table.concat({"unused variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                    output:append(table.concat({"unused variable:", v, "at", filename, funcname, "line:", col.line}, OutputSep)):append(NewLine)
                   end
                 end
               end
@@ -695,7 +727,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               gv[v].read  = true
               if global and not(global[v].write) then
                 if not(args.noundefined) and not(args.noglobal) then
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                  output:append(table.concat({"read undefined variable:", v, "at", filename, funcname, "line:", col.line}, OutputSep)):append(NewLine)
                 end
               end
             end
@@ -703,7 +736,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             gv[v].read = true
             if global and not(global[v].write) then
               if not(args.noundefined) and not(args.noglobal) then
-                output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                output:append(table.concat({"read undefined variable:", v, "at", filename, funcname, "line:", col.line}, OutputSep)):append(NewLine)
               end
             end
           end
