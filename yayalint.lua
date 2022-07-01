@@ -2,10 +2,10 @@
 local Lfs     = require("lfs")
 
 local Lpeg    = require("lpeglabel")
-local Re      = require("relabel")
+local Re      = require("lpeglabel.relabel")
 local Conv    = require("conv")
 local StringBuffer  = require("string_buffer")
-local ArgParse  = require("argparse")
+local ArgParse  = require("argparse.src.argparse")
 
 local FuncList  = require("func_list")
 
