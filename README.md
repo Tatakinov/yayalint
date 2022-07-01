@@ -12,34 +12,52 @@ yayalint\_lua.zipはlua.exeとyayalint.luaと依存ファイル群が入って�
 
 以下にWindowsでClang\+MSVCの組み合わせでコンパイルする場合の方法を載せます。
 
+
 用意するもの
 
-1. lua5.4
-2. lpeglabel
-3. luafilesystem
-4. argparse
-5. sol.hpp
-6. luastatic
+1. [lua5.4](https://www.lua.org/) v5.4.4
+2. [lpeglabel](https://github.com/Tatakinov/lpeglabel) gitの最新コミット
+3. [luafilesystem(lfs)](https://github.com/keplerproject/luafilesystem) v1.8.0
+4. [argparse](https://github.com/mpeterv/argparse) v0.6.0
+5. [sol.hpp](https://github.com/ThePhD/sol2) v3.3.0
+6. [luastatic](https://github.com/ers35/luastatic) v0.0.12
 
-5のsol.hppをinclude出来るようにしてconv/windows.ccをコンパイルしてstatic-library(windows.a)を作ります。
-
-```
-clang++ -std=c++17 -I /path/to/sol windows.cc -c -o windows.o
-llvm-ar r windows.a windows.o
-```
-
-1-3のstatic libraryを頑張ってコンパイルします。
-
-コンパイルが終わったらluastaticを使って次のコマンドを打ち込みます。
+1-6をダウンロードしてきてこんな感じのフォルダ構成にします。
 
 ```
-CC= luastatic yayalint.lua class/*.lua conv/*.lua string_buffer/*.lua relabel.lua func_list.lua argparse.lua conv/conv_windows.a lfs.a lpeglabel.a lua54.a
+---- yayalint.lua
+  |- ...
+  |
+  |- lua
+  | |- src
+  | |- ...
+  |
+  |- lpeglabel
+  | |- HISTORY
+  | |- ...
+  |
+  |- lfs
+  | |- LICENSE
+  | |- ...
+  |
+  |- argparse
+  | |- CHANGELOG.md
+  | |- ...
+  |
+  |- sol
+  | |- config.hpp
+  | |- forward.hpp
+  | |- sol.hpp
+  |
+  |- luastatic
+  | |- Makefile
+  | |- ...
 ```
 
-yayalint.luastatic.cが出来上がるのでclangでコンパイル
-
+yayalint.luaのあるフォルダでmakeします。
 ```
-clang -o yayalint.exe yayalint.luastatic.c conv/conv_windows.a lfs.a lpeglabel.a lua54.a
+cd /path/to/yayalint/
+make
 ```
 
 ## 使い方
