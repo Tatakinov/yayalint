@@ -892,14 +892,16 @@ local function getFileList(path, filename, relative)
   return file_list
 end
 
-local function main(path)
+local function main(path_to_yaya_txt)
   local file_list = {}
   local global_define  = {}
   local data  = {}
-  file_list = getFileList(path, "yaya.txt")
-  if #file_list == 0 then
-    file_list = getFileList(path, "aya.txt")
+  local path, filename  = string.match(path_to_yaya_txt, [[(.*[\/])(.*)]])
+  if not(path) then
+    path  = "./"
+    filename  = path_to_yaya_txt
   end
+  file_list = getFileList(path, filename)
   --dump(file_list)
   for _, v in ipairs(file_list) do
     --print(type(v), v)
@@ -915,11 +917,6 @@ local function main(path)
 end
 
 local path  = args.path
--- 末尾/(or\)の付け足し
-if string.sub(path, -1, -1) ~= DirSep then
-  path  = path .. DirSep
-end
---print(path)
 
 main(path)
 

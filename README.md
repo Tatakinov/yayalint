@@ -66,7 +66,7 @@ make
 Usage: yayalint [-F] [-s] [-w] [-f] [-u] [-d] [-l] [-g] [-h] <path>
 
 Arguments:
-   path                  yaya.txtが置いてあるフォルダのパス
+   path                  yaya.txt(or aya.txt)のパス(e.g. C:\ssp\ghost\test\ghost\master\yaya.txt)
 
 Options:
    -F, --nofile          ファイルが見つからないことを出力しない
