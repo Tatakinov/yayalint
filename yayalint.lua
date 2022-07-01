@@ -344,7 +344,7 @@ local function parse(path, filename, global_define)
     if args.nofile then
       return nil, nil
     else
-      return nil, string.format("not found:%s%s", OutputSep, filename)
+      return nil, string.format("not found:%s%s%s", OutputSep, path, filename)
     end
   end
   local data  = fh:read("*a")
@@ -353,7 +353,7 @@ local function parse(path, filename, global_define)
     if args.nofile then
       return nil, nil
     else
-      return nil, string.format("not found:%s%s", OutputSep, filename)
+      return nil, string.format("not found:%s%s%s", OutputSep, path, filename)
     end
   end
   data  = string.gsub(data, "\x0d\x0a", "\x0a")
@@ -799,68 +799,91 @@ local function interpret(data)
 end
 
 local function getFileList(path, filename, relative)
+
+  local function include(file_list, path, filename)
+    local t = getFileList(path, filename)
+    for _, v in ipairs(t) do
+      table.insert(file_list, v)
+    end
+  end
+
+  local function includeEX(file_list, path, relative, filename)
+    local tmp_path, tmp_filename = string.match(filename, "^(.*[/\\])(.*)")
+    if not(tmp_path) then
+      tmp_path  = ""
+      tmp_filename  = filename
+    end
+    if tmp_filename then
+      local t, err = getFileList(path, tmp_filename, relative .. tmp_path)
+      if err then
+        return false
+      end
+      for _, v in ipairs(t) do
+        table.insert(file_list, v)
+      end
+    end
+    return true
+  end
+
+  local function dicdir(file_list, path, relative, dirname)
+    local c = string.sub(dirname, -1, -1)
+    if not(c == "/") and not(c == "\\") then
+      dirname = dirname .. DirSep
+    end
+    local ret = includeEX(file_list, path, relative .. dirname, "_loading_order_override.txt")
+    if not(ret) then
+      ret = includeEX(file_list, path, relative .. dirname, "_loading_order.txt")
+    end
+    if not(ret) and Lfs.attributes(path .. relative ..dirname) then
+      local function recursiveGetFiles(path, relative, dirname)
+        for name in Lfs.dir(path .. relative .. dirname) do
+          local attr  = Lfs.attributes(path .. relative .. dirname .. name)
+          if name == "." or name == ".." then
+            -- NOP
+          elseif attr.mode == "directory" then
+            recursiveGetFiles(path, relative .. dirname, name .. DirSep)
+          elseif attr.mode == "file" then
+            --print(relative .. dirname .. name)
+            table.insert(file_list, relative .. dirname ..name)
+          end
+        end
+      end
+      recursiveGetFiles(path, relative, dirname)
+    elseif not(ret) then
+      output:append(table.concat({"not found:", path .. relative .. dirname}, OutputSep)):append(NewLine)
+    end
+  end
+
   relative  = relative or ""
   local file_list = {}
   --print(path, filename, relative)
   local fh  = io.open(path .. relative .. filename, "r")
   if not(fh) then
-    output:append(table.concat({"not found:", filename}, OutputSep)):append(NewLine)
-    return {}
+    output:append(table.concat({"not found:", path .. relative .. filename}, OutputSep)):append(NewLine)
+    return {}, "not found"
   end
   for line in fh:lines() do
     line  = string.gsub(line, "//[^\x0a]*", "")
-    local include   = string.match(line, "^ *include, *([0-9a-zA-Z_./\\-]+)")
+    local filename   = string.match(line, "^ *include, *([0-9a-zA-Z_./\\-]+)")
     ---[[
-    if include then
-      --print("include found:", include)
-      local t = getFileList(path, include)
-      for _, v in ipairs(t) do
-        table.insert(file_list, v)
-      end
+    if filename then
+      include(file_list, path, filename)
     end
     --]]
-    local include_ex  = string.match(line, "^ *includeEX, *([0-9a-zA-Z_./\\-]+)")
+    local filename  = string.match(line, "^ *includeEX, *([0-9a-zA-Z_./\\-]+)")
     ---[[
-    if include_ex then
-      --print("include_ex found:", include_ex)
-      local tmp_path, tmp_filename = string.match(include_ex, "^(.*[/\\])(.*)")
-      if not(tmp_path) then
-        tmp_path  = ""
-      end
-      if tmp_filename then
-        local t = getFileList(path, tmp_filename, relative .. tmp_path)
-        for _, v in ipairs(t) do
-          table.insert(file_list, v)
-        end
-      end
+    if filename then
+      includeEX(file_list, path, relative, filename)
     end
     --]]
     local dirname = string.match(line, "^ *dicdir, *([0-9a-zA-Z_./\\-]+)")
     if dirname then
-      local c = string.sub(dirname, -1, -1)
-      if not(c == "/") and not(c == "\\") then
-        dirname = dirname .. DirSep
-      end
-      if Lfs.attributes(path .. relative ..dirname) then
-        local function recursiveGetFiles(path, relative, dirname)
-          for name in Lfs.dir(path .. relative .. dirname) do
-            local attr  = Lfs.attributes(path .. relative .. dirname .. name)
-            if name == "." or name == ".." then
-              -- NOP
-            elseif attr.mode == "directory" then
-              recursiveGetFiles(path, relative .. dirname, name .. DirSep)
-            elseif attr.mode == "file" then
-              --print(relative .. dirname .. name)
-              table.insert(file_list, relative .. dirname ..name)
-            end
-          end
-        end
-        recursiveGetFiles(path, relative, dirname)
-      else
-        output:append(table.concat({"not found:", relative .. dirname}, OutputSep)):append(NewLine)
-      end
+      dicdir(file_list, path, relative, dirname)
     end
     local filename  = string.match(line, "^ *dic, *([0-9a-zA-Z_./\\-]+)")
+    if not(filename) then
+      filename  = string.match(line, "^ *dicif, *([0-9a-zA-Z_./\\-]+)")
+    end
     if filename then
       table.insert(file_list, relative .. filename)
     end
