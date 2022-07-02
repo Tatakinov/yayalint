@@ -34,7 +34,7 @@ ALL					= all
 all: $(PROGRAM)
 
 $(PROGRAM): yayalint.luastatic.c
-	$(CC) -I $(LUA_I) -o $(PROGRAM) yayalint.luastatic.c conv/windows.a lpeglabel.a lfs.a lua54.a
+	$(CC) -I $(LUA_I) -o $(PROGRAM) yayalint.luastatic.c conv/windows.a lpeglabel.a lfs.a lua54.a -msvcrt -Xlinker /NODEFAULTLIB:LIBCMT
 	
 yayalint.luastatic.c:$(SRCS) $(OBJS) $(LUA)
 	lua.exe luastatic/luastatic.lua $(SRCS) $(OBJS) || echo 1
