@@ -393,7 +393,7 @@ local function parse(path, filename, global_define)
   local str = StringBuffer()
   for line in string.gmatch(data, "[^\x0a]*") do
     if string.sub(line, 1, 1) == "#" then
-      local before, after = string.match(line, "#define[ \t]*([^ \t]+)[ \t]+([^ \t]+)")
+      local before, after = string.match(line, "#define[ \t]*([^ \t]+)[ \t]+(.+)")
       if before and after then
         --print("DEFINE:", before, after)
         --print(string.format("DEFINE:\t%s\t%s", escape(before), escape(after)))
@@ -402,7 +402,7 @@ local function parse(path, filename, global_define)
           after   = after,
         })
       end
-      local before, after = string.match(line, "#globaldefine[ \t]*([^ \t]+)[ \t]+([^ \t]+)")
+      local before, after = string.match(line, "#globaldefine[ \t]*([^ \t]+)[ \t]+(.+)")
       if before and after then
         --print("GLOBALDEFINE:", before, after)
         table.insert(global_define, {
