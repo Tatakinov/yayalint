@@ -798,7 +798,7 @@ local function interpret(data)
   end
 end
 
-local function getFileList(path, filename, relative)
+local function getFileList(path, filename, relative, ignore)
 
   local function include(file_list, path, filename)
     local t = getFileList(path, filename)
@@ -807,14 +807,14 @@ local function getFileList(path, filename, relative)
     end
   end
 
-  local function includeEX(file_list, path, relative, filename)
+  local function includeEX(file_list, path, relative, filename, ignore)
     local tmp_path, tmp_filename = string.match(filename, "^(.*[/\\])(.*)")
     if not(tmp_path) then
       tmp_path  = ""
       tmp_filename  = filename
     end
     if tmp_filename then
-      local t, err = getFileList(path, tmp_filename, relative .. tmp_path)
+      local t, err = getFileList(path, tmp_filename, relative .. tmp_path, ignore)
       if err then
         return false
       end
@@ -830,9 +830,9 @@ local function getFileList(path, filename, relative)
     if not(c == "/") and not(c == "\\") then
       dirname = dirname .. DirSep
     end
-    local ret = includeEX(file_list, path, relative .. dirname, "_loading_order_override.txt")
+    local ret = includeEX(file_list, path, relative .. dirname, "_loading_order_override.txt", true)
     if not(ret) then
-      ret = includeEX(file_list, path, relative .. dirname, "_loading_order.txt")
+      ret = includeEX(file_list, path, relative .. dirname, "_loading_order.txt", true)
     end
     if not(ret) and Lfs.attributes(path .. relative ..dirname) then
       local function recursiveGetFiles(path, relative, dirname)
@@ -859,7 +859,9 @@ local function getFileList(path, filename, relative)
   --print(path, filename, relative)
   local fh  = io.open(path .. relative .. filename, "r")
   if not(fh) then
-    output:append(table.concat({"not found:", path .. relative .. filename}, OutputSep)):append(NewLine)
+    if not(ignore) then
+      output:append(table.concat({"not found:", path .. relative .. filename}, OutputSep)):append(NewLine)
+    end
     return {}, "not found"
   end
   for line in fh:lines() do
