@@ -3,11 +3,13 @@
 -- you can use regexp to define function name
 -- please read https://www.lua.org/pil/20.2.html
 --
--- local used = {
---   "^EXAMPLE1$",   only EXAMPLE1
---   "^On",          OnSample, OnTest, OnMenu etc
---   "^OnTalk%d+$",  OnTalk1, OnTalk200, OnTalk003 etc
---   "^SHIORI3FW%.", SHIORI3FW.Test SHIORI3FW.Foo etc
+-- local func = {
+--   used  = {
+--     "^EXAMPLE1$",   only EXAMPLE1
+--     "^On",          OnSample, OnTest, OnMenu etc
+--     "^OnTalk%d+$",  OnTalk1, OnTalk200, OnTalk003 etc
+--     "^SHIORI3FW%.", SHIORI3FW.Test SHIORI3FW.Foo etc
+--   },
 -- }
 --
 --]]
