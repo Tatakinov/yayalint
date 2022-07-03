@@ -479,10 +479,6 @@ end
 
 local function isFunc(e)
   if e.append then
-    -- FIXME funcのcapture
-    if #e.append == 0 then
-      return true
-    end
     for i, v in ipairs(e.append) do
       if i == 1 and v.func then
         return true
