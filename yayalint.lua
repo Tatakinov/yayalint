@@ -491,7 +491,6 @@ end
 
 local function isUserUsedFunction(name)
   for _, v in ipairs(UserDefined.used) do
-    print(name, v, string.match(name, v))
     if string.match(name, v) then
       return true
     end
