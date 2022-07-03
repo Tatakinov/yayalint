@@ -13,6 +13,9 @@
 --]]
 
 local used  = {
+  "^load$",
+  "^unload$",
+  "^request$",
 }
 
 local predefined = {
