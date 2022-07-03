@@ -1,3 +1,16 @@
+local dirname = string.match(arg[0], [[(.*[\/])(.*)]])
+if dirname then
+  package.path  = package.path .. ";" .. dirname .. "?.lua"
+  package.path  = package.path .. ";" .. dirname .. "?/init.lua"
+  if string.sub(package.config, 1, 1) == "/" then
+    package.cpath  = package.cpath .. ";" .. dirname .. "?.so"
+    package.cpath  = package.cpath .. ";" .. dirname .. "?/init.so"
+  else
+    package.cpath  = package.cpath .. ";" .. dirname .. "?.dll"
+    package.cpath  = package.cpath .. ";" .. dirname .. "?/init.dll"
+  end
+end
+
 --local Lpeg    = require("lpeg")
 local Lfs     = require("lfs")
 
