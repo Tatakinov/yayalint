@@ -20,7 +20,7 @@ local Conv    = require("conv")
 local StringBuffer  = require("string_buffer")
 local ArgParse  = require("argparse.src.argparse")
 
-local FuncList  = require("func_list")
+local UserDefined  = require("user_defined")
 
 local OutputSep = "\t"
 local DirSep  = string.sub(package.config, 1, 1)
@@ -480,9 +480,21 @@ local function isSpecialLocalVariable(name)
   return false
 end
 
-local function isSpecialGlobalVariable(name)
-  if FuncList[name] then
-    return true
+local function isUserDefinedfunction(name)
+  for _, v in ipairs(UserDefined.predefined) do
+    if string.match(name, v) then
+      return true
+    end
+  end
+  return false
+end
+
+local function isUserUsedFunction(name)
+  for _, v in ipairs(UserDefined.used) do
+    print(name, v, string.match(name, v))
+    if string.match(name, v) then
+      return true
+    end
   end
   return false
 end
@@ -704,7 +716,7 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
           })
         end
         local v = col.g
-        if not(isSpecialGlobalVariable(v)) then
+        if not(isUserDefinedfunction(v)) then
           if gv[v] == nil then
             gv[v] = {
               read  = false,
@@ -794,7 +806,9 @@ local function interpret(data)
       local v = gv[func.name]
       if v.write and not(v.read) then
         if not(args.nounused) and not(args.nofunction) then
-          output:append(table.concat({"unused function:", func.name, "at", file.filename}, OutputSep)):append(NewLine)
+          if not(isUserUsedFunction(func.name)) then
+            output:append(table.concat({"unused function:", func.name, "at", file.filename}, OutputSep)):append(NewLine)
+          end
         end
       end
       recursive(func.body, {}, {}, file.filename, func.name, gv)
