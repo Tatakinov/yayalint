@@ -96,6 +96,18 @@ local ExpS9   = Lpeg.V("exp9")
 local ExpS10  = Lpeg.V("exp10")
 local ExpS11  = Lpeg.V("exp11")
 local ExpS12  = Lpeg.V("exp12")
+--[=[
+  + ((Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(GlobalVariable, "g"))
+  ---[[
+  * ( ExpSep *
+    (
+    Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index")
+    + Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(ExpS1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(ExpS1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")
+    )
+  ) ^ 0
+  --]]
+  )
+--]=]
 local ExpressionInString  = Lpeg.P({
   ExpS1,
   exp1  = ((ExpS2) * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp1, "enum")) * (ExpSep * ExpS2) ^ -1) ^ 0 + (Lpeg.Ct(Lpeg.Cg(ExpOp1, "enum")) * (ExpS2) ^ -1) ^ 1),
@@ -114,15 +126,8 @@ local ExpressionInString  = Lpeg.P({
   + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(LocalVariable, "l")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index") ^ 0
   + (Lpeg.P("(") * ExpSep * ExpS1 * ExpSep * Lpeg.P(")")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index") ^ 0
   + ((Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(GlobalVariable, "g"))
-  ---[[
-  * ( ExpSep *
-    (
-    Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index")
-    + Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(ExpS1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(ExpS1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")
-    )
-  ) ^ 0
-  --]]
-  )
+    * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct( ExpSep * (Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index")
+      + (Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(ExpS1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(ExpS1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")))) ^ 0), "append"))
   + (Lpeg.P("(") * ExpSep * ExpS1 * ExpSep * Lpeg.P(")"))),
 })
 local String1_1 = (StringSep1 * Lpeg.Cg(Lpeg.Ct(((Lpeg.P("%(") * ExpSep * (ExpressionInString) * ExpSep * Lpeg.P(")")) + Lpeg.Ct(Lpeg.Cg((((Lpeg.P("/") * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Char ^ 0 * NL) ^ 0)) + Lpeg.B( - (StringSep1 + Lpeg.P("%("))) * Char) ^ 1, "text"))) ^ 0), "string") * StringSep1)
@@ -474,6 +479,10 @@ end
 
 local function isFunc(e)
   if e.append then
+    -- FIXME funcのcapture
+    if #e.append == 0 then
+      return true
+    end
     for i, v in ipairs(e.append) do
       if i == 1 and v.func then
         return true
