@@ -656,7 +656,6 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             if global then
               if not(args.noundefined) and not(args.nolocal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
-                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                   output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
               end
@@ -671,7 +670,6 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if global then
                 if not(args.noundefined) and not(args.nolocal) then
                   if not(UserDefined.isUserDefinedVariable(v)) then
-                    --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                     output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                   end
                 end
@@ -684,7 +682,6 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             if global then
               if not(args.noundefined) and not(args.nolocal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
-                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                   output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
               end
@@ -712,14 +709,12 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             if isFunc(col) then
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedFunction(v)) then
-                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                   output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
               end
             else
               if not(args.noundefined) and not(args.noglobal) then
-                if not(UserDefined.isUserUsedVariable(v)) then
-                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                if not(UserDefined.isUserDefinedVariable(v)) then
                   output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
               end
@@ -732,7 +727,6 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if isFunc(col) then
                 if not(args.nounused) and not(args.noglobal) then
                   if not(UserDefined.isUserUsedFunction(v)) then
-                    --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                     output:append(table.concat({"unused function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                   end
                 end
@@ -740,7 +734,6 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
                 if global[v].write and not(global[v].read) then
                   if not(args.nounused) and not(args.noglobal) then
                     if not(UserDefined.isUserUsedVariable(v)) then
-                      --output:append(table.concat({"unused variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                       output:append(table.concat({"unused variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                     end
                   end
@@ -753,14 +746,12 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if isFunc(col) then
                 if not(args.noundefined) and not(args.noglobal) then
                   if not(UserDefined.isUserDefinedFunction(v)) then
-                    --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                     output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                   end
                 end
               else
                 if not(args.noundefined) and not(args.noglobal) then
                   if not(UserDefined.isUserDefinedVariable(v)) then
-                    --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                     output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                   end
                 end
@@ -773,14 +764,12 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             if isFunc(col) then
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedFunction(v)) then
-                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                   output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
               end
             else
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
-                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                   output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
               end
