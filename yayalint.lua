@@ -118,7 +118,7 @@ local ExpressionInString  = Lpeg.P({
   * ( ExpSep *
     (
     Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index")
-    + ((Lpeg.P("(") * Lpeg.Cg(ExpSep * Lpeg.Ct(ExpS1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(ExpS1)) ^ 0, "func") ^ -1 * ExpSep * Lpeg.P(")"))) 
+    + Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(ExpS1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(ExpS1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")
     )
   ) ^ 0
   --]]
@@ -162,7 +162,10 @@ local ExpTbl  =
   + Return + Break + Continue
   + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(LocalVariable, "l")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") ^ 0
   + (Lpeg.P("(") * ExpSep * Exp1 * ExpSep * Lpeg.P(")")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") ^ 0
-  + ((Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(GlobalVariable, "g")) * ( ExpSep * (Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") + ((Lpeg.P("(") * Lpeg.Cg(ExpSep * Lpeg.Ct(Exp1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(Exp1)) ^ 0, "func") ^ -1 * ExpSep * Lpeg.P(")"))))) ^ 0) + (Lpeg.P("(") * ExpSep * Exp1 * ExpSep * Lpeg.P(")"))),
+  + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(GlobalVariable, "g"))
+    * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct( ExpSep * (Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index")
+      + (Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(Exp1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(Exp1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")))) ^ 0), "append")
+      + (Lpeg.P("(") * ExpSep * Exp1 * ExpSep * Lpeg.P(")"))),
   stringv = String1 + String2,
   string2 = String2_1 + String2_2,
   string2_1 = (Lpeg.P("<<") * StringSep1 * Lpeg.Cg(Lpeg.Ct(((Lpeg.P("%(") * ExpSep * (Exp1) * ExpSep * Lpeg.P(")")) + Lpeg.Ct(Lpeg.Cg((((NL)) + Lpeg.B( - (Lpeg.P("%(") + (StringSep1 * Lpeg.P(">>")))) * Char) ^ 1, "text"))) ^ 0), "string") * StringSep1 * Lpeg.P(">>")),
@@ -469,30 +472,12 @@ local function parse(path, filename, global_define)
   return t
 end
 
-local function isSpecialLocalVariable(name)
-  local special = {
-    ["_argc"] = true,
-    ["_argv"] = true,
-  }
-  if special[name] then
-    return true
-  end
-  return false
-end
-
-local function isUserDefinedfunction(name)
-  for _, v in ipairs(UserDefined.predefined) do
-    if string.match(name, v) then
-      return true
-    end
-  end
-  return false
-end
-
-local function isUserUsedFunction(name)
-  for _, v in ipairs(UserDefined.used) do
-    if string.match(name, v) then
-      return true
+local function isFunc(e)
+  if e.append then
+    for i, v in ipairs(e.append) do
+      if i == 1 and v.func then
+        return true
+      end
     end
   end
   return false
@@ -519,10 +504,19 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
     end
   end
   for _, line in ipairs(scope) do
+    if type(line) ~= "table" then
+      print("line:", line)
+    end
     for i, col in ipairs(line) do
       if #col > 0 then
         recursive({col}, gv, lv, filename, funcname, global, {
           overwrite = true,
+        })
+      end
+      if col.append then
+        recursive({col.append}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
         })
       end
       if col.scope then
@@ -629,12 +623,6 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
         })
         recursive(col.scope_switch[1], gv, lv, filename, funcname, global)
       end
-      if col.func then
-        recursive({col.func}, gv, lv, filename, funcname, global, {
-          overwrite   = true,
-          force_read  = true,
-        })
-      end
       if col.string then
         if type(col.string) == "table" then
           recursive({col.string}, gv, lv, filename, funcname, global, {
@@ -643,62 +631,54 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
           })
         end
       end
-      if col.index then
-        recursive({col.index}, gv, lv, filename, funcname, global, {
-          overwrite   = true,
-          force_read  = true,
-        })
-      end
       if col.l then
-        if col.index then
-          recursive({col.index}, gv, lv, filename, funcname, global, {
-            overwrite   = true,
-            force_read  = true,
-          })
-        end
         local v = col.l
-        if not(isSpecialLocalVariable(v)) then
-          if lv[v] == nil then
-            lv[v] = {
-              read  = false,
-              write = false,
-            }
-          end
-          if opt.var_foreach then
-            lv[v].write = true
-          end
-          if opt.force_read then
-            lv[v].read  = true
-          end
-          if line[i - 1] then
-            lv[v].read  = true
-            if not(lv[v].write) then
-              if global then
-                if not(args.noundefined) and not(args.nolocal) then
+        if lv[v] == nil then
+          lv[v] = {
+            read  = false,
+            write = false,
+          }
+        end
+        if opt.var_foreach then
+          lv[v].write = true
+        end
+        if opt.force_read then
+          lv[v].read  = true
+        end
+        if line[i - 1] then
+          lv[v].read  = true
+          if not(lv[v].write) then
+            if global then
+              if not(args.noundefined) and not(args.nolocal) then
+                if not(UserDefined.isUserDefinedVariable(v)) then
                   --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                   output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
               end
             end
-          elseif line[i + 1] then
-            if (line[i + 1].assign or line[i + 1].op_assign) then
-              lv[v].write = true
-            else
-              lv[v].read  = true
-              if not(lv[v].write) then
-                if global then
-                  if not(args.noundefined) and not(args.nolocal) then
+          end
+        elseif line[i + 1] then
+          if (line[i + 1].assign or line[i + 1].op_assign) then
+            lv[v].write = true
+          else
+            lv[v].read  = true
+            if not(lv[v].write) then
+              if global then
+                if not(args.noundefined) and not(args.nolocal) then
+                  if not(UserDefined.isUserDefinedVariable(v)) then
                     --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                     output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                   end
                 end
               end
             end
-          elseif #line == 1 and not(opt.var_foreach)then
-            lv[v].read = true
-            if not(lv[v].write) then
-              if global then
-                if not(args.noundefined) and not(args.nolocal) then
+          end
+        elseif #line == 1 and not(opt.var_foreach)then
+          lv[v].read = true
+          if not(lv[v].write) then
+            if global then
+              if not(args.noundefined) and not(args.nolocal) then
+                if not(UserDefined.isUserDefinedVariable(v)) then
                   --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                   output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
@@ -708,64 +688,112 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
         end
       end
       if col.g then
-        if col.index then
-          recursive({col.index}, gv, lv, filename, funcname, global, {
-            overwrite   = true,
-            force_read  = true,
-          })
-        end
         local v = col.g
-        if not(isUserDefinedfunction(v)) then
-          if gv[v] == nil then
-            gv[v] = {
-              read  = false,
-              write = false,
-            }
-          end
-          if opt.force_read then
-            gv[v].read  = true
-          end
-          if opt.var_foreach then
-            lv[v].write = true
-          end
-          if line[i - 1] then
-            gv[v].read  = true
-            if global and not(global[v].write) then
+        if gv[v] == nil then
+          gv[v] = {
+            read  = false,
+            write = false,
+          }
+        end
+        if opt.force_read then
+          gv[v].read  = true
+        end
+        if opt.var_foreach then
+          lv[v].write = true
+        end
+        if line[i - 1] then
+          gv[v].read  = true
+          if global and not(global[v].write) then
+            if isFunc(col) then
               if not(args.noundefined) and not(args.noglobal) then
-                --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
-                output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
-              end
-            end
-          elseif line[i + 1] then
-            if (line[i + 1].assign or line[i + 1].op_assign) then
-              gv[v].write = true
-              if global then
-                if global[v].write and not(global[v].read) then
-                  if not(args.noglobal) and not(args.nounused) then
-                    --output:append(table.concat({"unused variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
-                    output:append(table.concat({"unused variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
-                  end
+                if not(UserDefined.isUserDefinedFunction(v)) then
+                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                  output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
               end
             else
-              gv[v].read  = true
-              if global and not(global[v].write) then
-                if not(args.noundefined) and not(args.noglobal) then
+              if not(args.noundefined) and not(args.noglobal) then
+                if not(UserDefined.isUserUsedVariable(v)) then
                   --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
                   output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
               end
             end
-          elseif #line == 1 and not(opt.var_foreach)then
-            gv[v].read = true
+          end
+        elseif line[i + 1] then
+          if (line[i + 1].assign or line[i + 1].op_assign) then
+            gv[v].write = true
+            if global then
+              if isFunc(col) then
+                if not(args.nounused) and not(args.noglobal) then
+                  if not(UserDefined.isUserUsedFunction(v)) then
+                    --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                    output:append(table.concat({"unused function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                  end
+                end
+              else
+                if global[v].write and not(global[v].read) then
+                  if not(args.nounused) and not(args.noglobal) then
+                    if not(UserDefined.isUserUsedVariable(v)) then
+                      --output:append(table.concat({"unused variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                      output:append(table.concat({"unused variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                    end
+                  end
+                end
+              end
+            end
+          else
+            gv[v].read  = true
             if global and not(global[v].write) then
+              if isFunc(col) then
+                if not(args.noundefined) and not(args.noglobal) then
+                  if not(UserDefined.isUserDefinedFunction(v)) then
+                    --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                    output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                  end
+                end
+              else
+                if not(args.noundefined) and not(args.noglobal) then
+                  if not(UserDefined.isUserDefinedVariable(v)) then
+                    --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                  end
+                end
+              end
+            end
+          end
+        elseif #line == 1 and not(opt.var_foreach)then
+          gv[v].read = true
+          if global and not(global[v].write) then
+            if isFunc(col) then
               if not(args.noundefined) and not(args.noglobal) then
-                --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
-                output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                if not(UserDefined.isUserDefinedFunction(v)) then
+                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                  output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                end
+              end
+            else
+              if not(args.noundefined) and not(args.noglobal) then
+                if not(UserDefined.isUserDefinedVariable(v)) then
+                  --output:append(table.concat({"read undefined variable:", v, "at", filename, funcname}, OutputSep)):append(NewLine)
+                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                end
               end
             end
           end
         end
+      end
+      if col.func then
+        recursive({col.func}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
+      end
+      if col.index then
+        recursive({col.index}, gv, lv, filename, funcname, global, {
+          overwrite   = true,
+          force_read  = true,
+        })
       end
     end
   end
@@ -805,7 +833,7 @@ local function interpret(data)
       local v = gv[func.name]
       if v.write and not(v.read) then
         if not(args.nounused) and not(args.nofunction) then
-          if not(isUserUsedFunction(func.name)) then
+          if not(UserDefined.isUserUsedFunction(func.name)) then
             output:append(table.concat({"unused function:", func.name, "at", file.filename}, OutputSep)):append(NewLine)
           end
         end
