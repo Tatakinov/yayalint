@@ -24,7 +24,7 @@ export	NM	= llvm-nm
 LD					= clang++
 LDFLAGS			= -shared
 
-SRCS				= yayalint.lua func_list.lua class/init.lua conv/init.lua conv/windows_wrap.lua string_buffer/init.lua lpeglabel/relabel.lua argparse/src/argparse.lua
+SRCS				= yayalint.lua class/init.lua conv/init.lua conv/windows_wrap.lua string_buffer/init.lua lpeglabel/relabel.lua argparse/src/argparse.lua
 OBJS				= conv/windows.a lpeglabel.a lfs.a lua54.a
 ALL					= all
 
@@ -34,7 +34,7 @@ ALL					= all
 all: $(PROGRAM)
 
 $(PROGRAM): yayalint.luastatic.c
-	$(CC) -I $(LUA_I) -o $(PROGRAM) yayalint.luastatic.c conv/windows.a lpeglabel.a lfs.a lua54.a -msvcrt -Xlinker /NODEFAULTLIB:LIBCMT
+	$(CC) -I $(LUA_I) -o $(PROGRAM) yayalint.luastatic.c conv/windows.a lpeglabel.a lfs.a lua54.a -lmsvcrt -Xlinker /NODEFAULTLIB:LIBCMT
 	
 yayalint.luastatic.c:$(SRCS) $(OBJS) $(LUA)
 	lua.exe luastatic/luastatic.lua $(SRCS) $(OBJS) || echo 1
