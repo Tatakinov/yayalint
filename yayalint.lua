@@ -716,9 +716,6 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               end
             else
               if not(args.noundefined) and not(args.noglobal) then
-                -- 関数を()を使わないで呼ぶと変数扱いされるため
-                -- グローバル変数として認識している関数には
-                -- isUserDefinedFunctionを呼ぶべきか？
                 if not(UserDefined.isUserDefinedVariable(v)) then
                   output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                 end
@@ -830,11 +827,6 @@ local function interpret(data)
     end
   end
   --dump(gv)
-  local func_list = {}
-  for k, _ in pairs(gv) do
-    table.insert(func_list, k)
-  end
-  UserDefined.registerFunctionList(func_list)
   for _, file in ipairs(data) do
     for _, func in ipairs(file) do
       --print("function", func.name)
