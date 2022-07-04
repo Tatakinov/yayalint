@@ -61,7 +61,7 @@ local ScopeEnd    = Lpeg.P("}")
 -- 予約語にはひっかからんし- Reserveはいらんやろ
 local LocalVariable = Lpeg.P("_") * (Lpeg.B(- InvalidName) * Char) ^ 0
 local GlobalVariable  = Lpeg.B(- Lpeg.P("_")) * Name
-local Variable  = Lpeg.Cg(LocalVariable, "l") + Lpeg.Cg(GlobalVariable, "g")
+local Variable  = Lpeg.Cg(Lpeg.Cp(), "pos") * (Lpeg.Cg(LocalVariable, "l") + Lpeg.Cg(GlobalVariable, "g"))
 
 local Return    = Lpeg.Ct(Space ^ 0 * Lpeg.Cg(Lpeg.P("return"), "special"))
 local Break     = Lpeg.Ct(Space ^ 0 * Lpeg.Cg(Lpeg.P("break"), "special"))
