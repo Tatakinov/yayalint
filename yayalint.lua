@@ -300,7 +300,7 @@ local ScopeOuter = Lpeg.P({
   scopecaseothers = ScopeTbl.scopecaseothers,
   scopeswitch     = ScopeTbl.scopeswitch,
 })
-local Function  = Lpeg.Ct(Lpeg.Cg(Name, "name") * (SepEx ^ 0 * Lpeg.P(":") * SepEx ^ 0 * Lpeg.Cg(Alternative, "alter")) ^ -1 * SepEx ^ 0 * Lpeg.Cg(ScopeOuter, "body"))
+local Function  = Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Name, "name") * (SepEx ^ 0 * Lpeg.P(":") * SepEx ^ 0 * Lpeg.Cg(Alternative, "alter")) ^ -1 * SepEx ^ 0 * Lpeg.Cg(ScopeOuter, "body"))
 
 local Grammar = Lpeg.Ct((Function + Empty) ^ 0) * -1
 
@@ -642,6 +642,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
           lv[v] = {
             read  = false,
             write = false,
+            line  = col.line,
+            col   = col.col,
           }
         end
         if opt.var_foreach then
@@ -807,7 +809,7 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
       if v.write and not(v.read) then
         if global then
           if not(args.nolocal) and not(args.nounused) then
-            output:append(table.concat({"unused variable:", k, "at", filename, funcname}, OutputSep)):append(NewLine)
+            output:append(table.concat({"unused variable:", k, "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
           end
         end
       end
@@ -825,6 +827,8 @@ local function interpret(data)
         gv[func.name] = {
           read  = false,
           write = false,
+          line  = func.line,
+          col   = func.col,
         }
       end
       gv[func.name].write = true
@@ -839,7 +843,7 @@ local function interpret(data)
       if v.write and not(v.read) then
         if not(args.nounused) and not(args.nofunction) then
           if not(UserDefined.isUserUsedFunction(func.name)) then
-            output:append(table.concat({"unused function:", func.name, "at", file.filename}, OutputSep)):append(NewLine)
+            output:append(table.concat({"unused function:", func.name, "at", file.filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
           end
         end
       end
