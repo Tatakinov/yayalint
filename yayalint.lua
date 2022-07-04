@@ -809,7 +809,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
       if v.write and not(v.read) then
         if global then
           if not(args.nolocal) and not(args.nounused) then
-            output:append(table.concat({"unused variable:", k, "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
+            if not(UserDefined.isUserDefinedVariable(v)) then
+              output:append(table.concat({"unused variable:", k, "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
+            end
           end
         end
       end
