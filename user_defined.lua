@@ -31,6 +31,8 @@ local func  = {
     "^request$",
   },
   predefined = {
+  },
+  builtin = {
     "^ACOS$",
     "^ANY$",
     "^APPEND_RUNTIME_DIC$",
@@ -186,12 +188,26 @@ local func  = {
   },
 }
 
-
+local register_func_list = {}
 
 local M = {}
 
+function M.registerFunctionList(func_list)
+  register_func_list  = func_list
+end
+
 function M.isUserDefinedVariable(name)
   for _, v in ipairs(var.predefined) do
+    if string.match(name, v) then
+      return true
+    end
+  end
+  for _, v in ipairs(register_func_list) do
+    if string.match(name, "^" .. v .. "$") then
+      return true
+    end
+  end
+  for _, v in ipairs(func.builtin) do
     if string.match(name, v) then
       return true
     end
@@ -210,6 +226,11 @@ end
 
 function M.isUserDefinedFunction(name)
   for _, v in ipairs(func.predefined) do
+    if string.match(name, v) then
+      return true
+    end
+  end
+  for _, v in ipairs(func.builtin) do
     if string.match(name, v) then
       return true
     end
