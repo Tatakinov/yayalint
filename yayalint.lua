@@ -946,11 +946,16 @@ local function getFileList(path, filename, relative, ignore)
       dicdir(file_list, path, relative, dirname)
     end
     local filename  = string.match(line, "^ *dic, *([0-9a-zA-Z_./\\-]+)")
-    if not(filename) then
-      filename  = string.match(line, "^ *dicif, *([0-9a-zA-Z_./\\-]+)")
-    end
     if filename then
       table.insert(file_list, relative .. filename)
+    end
+    local filename  = string.match(line, "^ *dicif, *([0-9a-zA-Z_./\\-]+)")
+    if filename then
+      local fh  = io.open(path .. relative .. filename, "r")
+      if fh then
+        fh:close()
+        table.insert(file_list, relative .. filename)
+      end
     end
   end
   fh:close()
