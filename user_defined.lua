@@ -193,7 +193,10 @@ local register_func_list = {}
 local M = {}
 
 function M.registerFunctionList(func_list)
-  register_func_list  = func_list
+  register_func_list  = {}
+  for _, v in ipairs(func_list) do
+    table.insert(register_func_list, "^" .. v .. "$")
+  end
 end
 
 function M.isUserDefinedVariable(name)
@@ -203,7 +206,7 @@ function M.isUserDefinedVariable(name)
     end
   end
   for _, v in ipairs(register_func_list) do
-    if string.match(name, "^" .. v .. "$") then
+    if string.match(name, v) then
       return true
     end
   end
