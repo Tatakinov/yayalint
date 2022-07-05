@@ -1,4 +1,28 @@
 local Config  = require("config")
+if type(Config) ~= "table" then
+  Config  = {}
+end
+if not(Config.var) then
+  Config.var  = {}
+end
+if not(Config.var.used) then
+  Config.var.used = {}
+end
+if not(Config.var.predefined) then
+  Config.var.predefined = {}
+end
+if not(Config.func) then
+  Config.func = {}
+end
+if not(Config.func.used) then
+  Config.func.used = {}
+end
+if not(Config.func.predefined) then
+  Config.func.predefined = {}
+end
+if not(Config.func.builtin) then
+  Config.func.builtin = {}
+end
 
 local M = {}
 
