@@ -3,10 +3,12 @@
 -- you can use regexp to define function name
 -- please read https://www.lua.org/pil/20.2.html
 --
+-- -- relative path from folder where yaya.txt exists.
 -- local file = {
 --   no_unused_global  = {
 --     "^example/yaya_useful_lib.dic$",
 --     "^lib/",
+--     "^../system/",
 --   },
 -- }
 --
