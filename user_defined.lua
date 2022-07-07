@@ -1,4 +1,4 @@
-local Config  = require("config")
+local Config  = require("yayalint_config")
 if type(Config) ~= "table" then
   Config  = {}
 end
