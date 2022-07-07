@@ -962,6 +962,7 @@ local function main(path_to_yaya_txt)
     path  = "./"
     filename  = path_to_yaya_txt
   end
+  UserDefined.loadConfig(path)
   file_list = getFileList(path, filename)
   --dump(file_list)
   for _, v in ipairs(file_list) do
