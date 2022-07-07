@@ -734,7 +734,7 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
                 end
               else
                 if global[v].write and not(global[v].read) then
-                  if not(args.nounused) and not(args.noglobal) then
+                  if not(args.nounused) and not(args.noglobal) and not(args.no_unused_global) then
                     if not(UserDefined.isUserUsedVariable(v)) then
                       output:append(table.concat({"unused variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                     end
@@ -828,11 +828,12 @@ local function interpret(data)
   end
   --dump(gv)
   for _, file in ipairs(data) do
+    args.no_unused_global  = UserDefined.isSuppressWarning(file.filename)
     for _, func in ipairs(file) do
       --print("function", func.name)
       local v = gv[func.name]
       if v.write and not(v.read) then
-        if not(args.nounused) and not(args.nofunction) then
+        if not(args.nounused) and not(args.nofunction) and not(args.no_unused_global) then
           if not(UserDefined.isUserUsedFunction(func.name)) then
             output:append(table.concat({"unused function:", func.name, "at", file.filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
           end

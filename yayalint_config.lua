@@ -3,6 +3,13 @@
 -- you can use regexp to define function name
 -- please read https://www.lua.org/pil/20.2.html
 --
+-- local file = {
+--   no_unused_global  = {
+--     "^example/yaya_useful_lib.dic$",
+--     "^lib/",
+--   },
+-- }
+--
 -- local func = {
 --   used  = {
 --     "^EXAMPLE1$",   only EXAMPLE1
@@ -14,6 +21,11 @@
 --
 --]]
 
+
+local file  = {
+  no_unused_global  = {
+  },
+}
 
 local var = {
   used  = {
@@ -200,6 +212,7 @@ local func  = {
 
 
 return {
+  file  = file,
   var = var,
   func  = func,
 }

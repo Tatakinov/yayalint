@@ -4,6 +4,12 @@ local function initialize()
   if type(Config) ~= "table" then
     Config  = {}
   end
+  if not(Config.file) then
+    Config.file = {}
+  end
+  if not(Config.file.no_unused_global) then
+    Config.file.no_unused_global  = {}
+  end
   if not(Config.var) then
     Config.var  = {}
   end
@@ -38,6 +44,15 @@ function M.loadConfig(path)
       initialize()
     end
   end
+end
+
+function M.isSuppressWarning(path)
+  for _, v in ipairs(Config.file.no_unused_global) do
+    if string.match(path, v) then
+      return true
+    end
+  end
+  return false
 end
 
 function M.isUserDefinedVariable(name)
