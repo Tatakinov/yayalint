@@ -727,7 +727,7 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             gv[v].write = true
             if global then
               if isFunc(col) then
-                if not(args.nounused) and not(args.noglobal) then
+                if not(args.nounused) and not(args.noglobal) and not(args.no_unused_global) then
                   if not(UserDefined.isUserUsedFunction(v)) then
                     output:append(table.concat({"unused function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
                   end
