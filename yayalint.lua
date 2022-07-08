@@ -21,7 +21,8 @@ local Conv    = require("conv")
 local StringBuffer  = require("string_buffer")
 local ArgParse  = require("argparse.src.argparse")
 
-local UserDefined  = require("user_defined")
+local UserDefined = require("user_defined")
+local Levenshtein = require("levenshtein")
 
 local OutputSep = "\t"
 local DirSep  = string.sub(package.config, 1, 1)
@@ -660,7 +661,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             if global then
               if not(args.noundefined) and not(args.nolocal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                  local maybe = Levenshtein(v, lv, gv) or ""
+                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
                 end
               end
             end
@@ -674,7 +676,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if global then
                 if not(args.noundefined) and not(args.nolocal) then
                   if not(UserDefined.isUserDefinedVariable(v)) then
-                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                    local maybe = Levenshtein(v, lv, gv) or ""
+                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
                   end
                 end
               end
@@ -686,7 +689,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             if global then
               if not(args.noundefined) and not(args.nolocal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                  local maybe = Levenshtein(v, lv, gv) or ""
+                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
                 end
               end
             end
@@ -713,13 +717,15 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             if isFunc(col) then
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedFunction(v)) then
-                  output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                  local maybe = Levenshtein(v, gv, lv) or ""
+                  output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
                 end
               end
             else
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                  local maybe = Levenshtein(v, gv, lv) or ""
+                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
                 end
               end
             end
@@ -750,13 +756,15 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if isFunc(col) then
                 if not(args.noundefined) and not(args.noglobal) then
                   if not(UserDefined.isUserDefinedFunction(v)) then
-                    output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                    local maybe = Levenshtein(v, gv, lv) or ""
+                    output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
                   end
                 end
               else
                 if not(args.noundefined) and not(args.noglobal) then
                   if not(UserDefined.isUserDefinedVariable(v)) then
-                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                    local maybe = Levenshtein(v, gv, lv) or ""
+                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
                   end
                 end
               end
@@ -768,13 +776,15 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
             if isFunc(col) then
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedFunction(v)) then
-                  output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                  local maybe = Levenshtein(v, gv, lv) or ""
+                  output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
                 end
               end
             else
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                  local maybe = Levenshtein(v, gv, lv) or ""
+                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
                 end
               end
             end
