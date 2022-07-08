@@ -10,7 +10,7 @@ yayalint\_lua.zipはlua.exeとyayalint.luaと依存ファイル群が入って�
 
 ## How to Build
 
-以下にWindowsでClang\+MSVCの組み合わせでコンパイルする場合の方法を載せます。
+以下にWindowsでClang\+MSVC\+makeの組み合わせでコンパイルする場合の方法を載せます。
 
 
 用意するもの
@@ -21,8 +21,9 @@ yayalint\_lua.zipはlua.exeとyayalint.luaと依存ファイル群が入って�
 4. [argparse](https://github.com/mpeterv/argparse) v0.6.0
 5. [sol.hpp](https://github.com/ThePhD/sol2) v3.3.0
 6. [luastatic](https://github.com/ers35/luastatic) v0.0.12
+7. [path](https://github.com/luapower/path) 最新コミット
 
-1-6をダウンロードしてきてこんな感じのフォルダ構成にします。
+1-7をダウンロードしてきてこんな感じのフォルダ構成にします。
 
 ```
 ---- yayalint.lua
@@ -51,6 +52,10 @@ yayalint\_lua.zipはlua.exeとyayalint.luaと依存ファイル群が入って�
   |
   |- luastatic
   | |- Makefile
+  | |- ...
+  |
+  |- path
+  | |- path.lua
   | |- ...
 ```
 

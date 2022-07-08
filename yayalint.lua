@@ -13,6 +13,7 @@ end
 
 --local Lpeg    = require("lpeg")
 local Lfs     = require("lfs")
+local Path    = require("path.path")
 
 local Lpeg    = require("lpeglabel")
 local Re      = require("lpeglabel.relabel")
@@ -360,6 +361,7 @@ local function pos2linecol(t, data)
 end
 
 local function parse(path, filename, global_define)
+  filename  = Path.normalize(filename, "win", {sep = "/"})
   local fh  = io.open(path .. filename, "rb")
   if not(fh) then
     if args.nofile then
@@ -905,7 +907,7 @@ local function getFileList(path, filename, relative, ignore)
       end
       recursiveGetFiles(path, relative, dirname)
     elseif not(ret) then
-      output:append(table.concat({"not found:", path .. relative .. dirname}, OutputSep)):append(NewLine)
+      output:append(table.concat({"not found:", Path.normalize(path .. relative .. dirname, "win", {sep = "/"})}, OutputSep)):append(NewLine)
     end
   end
 
@@ -915,7 +917,7 @@ local function getFileList(path, filename, relative, ignore)
   local fh  = io.open(path .. relative .. filename, "r")
   if not(fh) then
     if not(ignore) then
-      output:append(table.concat({"not found:", path .. relative .. filename}, OutputSep)):append(NewLine)
+      output:append(table.concat({"not found:", Path.normalize(path .. relative .. filename, "win", {sep = "/"})}, OutputSep)):append(NewLine)
     end
     return {}, "not found"
   end
