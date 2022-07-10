@@ -541,7 +541,7 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
           overwrite   = true,
           force_read  = true,
         })
-        recursive(col.scope_if[1], gv, lv, filename, funcname, global)
+        recursive(col.scope_if, gv, lv, filename, funcname, global)
       end
       if col.scope_elseif then
         recursive({col.condition}, gv, lv, filename, funcname, global, {
