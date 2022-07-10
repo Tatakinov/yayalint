@@ -384,6 +384,11 @@ local function parse(path, filename, global_define)
   data  = string.gsub(data, "\x0d\x0a", "\x0a")
   data  = string.gsub(data, "\x0d", "\x0a")
   data  = data .. "\n" -- noeolに対応
+  -- UTF-8(with BOM) => UTF-8
+  if string.sub(data, 1, 3) == string.char(0xef, 0xbb, 0xbf) then
+    data  = string.sub(data, 4)
+  end
+  -- Shift_JIS => UTF-8
   local tmp = Conv.conv(data, "UTF-8", "CP932")
   if tmp then
     data  = tmp
