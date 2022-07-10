@@ -355,7 +355,8 @@ local function pos2linecol(t, data)
         line  = line + 1
       end
       t.line  = line
-      t.col   = utf8.len(string.sub(data[line], 1, pos))
+      -- 直前の文字まで+1がcaptureした文字の開始位置
+      t.col   = utf8.len(string.sub(data[line], 1, pos - 1)) + 1
       t.pos   = nil
     end
   end
