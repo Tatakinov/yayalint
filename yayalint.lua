@@ -71,7 +71,7 @@ local Continue  = Lpeg.Ct(Space ^ 0 * Lpeg.Cg(Lpeg.P("continue"), "special"))
 
 local StringSep1 = Lpeg.P("\"")
 local StringSep2 = Lpeg.P("'")
-local String1_2 = (StringSep2 * Lpeg.Cg(((Lpeg.P("/") * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Char ^ 0 * NL) ^ 0) + (Lpeg.B( - StringSep2) * Char)) ^ 0, "string") * StringSep2)
+local String1_2 = (StringSep2 * Lpeg.Cg(((Lpeg.P("/") * Space ^ 0 * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Char ^ 0 * NL) ^ 0) + (Lpeg.B( - StringSep2) * Char)) ^ 0, "string") * StringSep2)
 local String2_2 = (Lpeg.P("<<") * StringSep2 * Lpeg.Cg(((NL) + (Lpeg.B( - (StringSep2 * Lpeg.P(">>"))) * Char)) ^ 0, "string") * StringSep2 * Lpeg.P(">>"))
 
 local ExpSep  = (Space) ^ 0
@@ -132,7 +132,7 @@ local ExpressionInString  = Lpeg.P({
       + (Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(ExpS1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(ExpS1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")))) ^ 0), "append"))
   + (Lpeg.P("(") * ExpSep * ExpS1 * ExpSep * Lpeg.P(")"))),
 })
-local String1_1 = (StringSep1 * Lpeg.Cg(Lpeg.Ct(((Lpeg.P("%(") * ExpSep * (ExpressionInString) * ExpSep * Lpeg.P(")")) + Lpeg.Ct(Lpeg.Cg((((Lpeg.P("/") * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Char ^ 0 * NL) ^ 0)) + Lpeg.B( - (StringSep1 + Lpeg.P("%("))) * Char) ^ 1, "text"))) ^ 0), "string") * StringSep1)
+local String1_1 = (StringSep1 * Lpeg.Cg(Lpeg.Ct(((Lpeg.P("%(") * ExpSep * (ExpressionInString) * ExpSep * Lpeg.P(")")) + Lpeg.Ct(Lpeg.Cg((((Lpeg.P("/") * Space ^ 0 * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Char ^ 0 * NL) ^ 0)) + Lpeg.B( - (StringSep1 + Lpeg.P("%("))) * Char) ^ 1, "text"))) ^ 0), "string") * StringSep1)
 local String1 = String1_1 + String1_2
 
 local String2_1 = Lpeg.V("string2_1")
