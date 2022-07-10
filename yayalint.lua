@@ -218,7 +218,7 @@ local String  = Lpeg.P(
 }
 )
 local Alternative = Lpeg.P("void") + Lpeg.P("pool") + Lpeg.P("all") + Lpeg.P("last") + (Lpeg.P("melt_") ^ -1) * (Lpeg.P("random") + Lpeg.P("nonoverlap") + Lpeg.P("sequential") + Lpeg.P("array")) * (Lpeg.P("_pool") ^ -1)
-local AlternativeSep  = Lpeg.Ct(Space ^ 0 * Lpeg.Cg(Lpeg.P("--"), "altersep") * NL)
+local AlternativeSep  = Lpeg.Ct(Space ^ 0 * Lpeg.Cg(Lpeg.P("--"), "altersep") * Space ^ 0 * (Comment1 + NL))
 local ForCondSep  = Lpeg.P(";")
 local ForCondition  = Lpeg.Ct(Lpeg.Cg(Lpeg.Ct(Expression), "init") * Space ^ 0 * ForCondSep * (Space ^ 0 * ForCondSep) ^ 0 * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression), "condition") * Space ^ 0 * ForCondSep * (Space ^ 0 * ForCondSep) ^ 0 * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression), "next"))
 local ForeachCondition  = Lpeg.Ct(Lpeg.Cg(Lpeg.Ct(Expression), "array") * Space ^ 0 * ForCondSep * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Variable), "var"))
