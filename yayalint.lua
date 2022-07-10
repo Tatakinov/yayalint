@@ -350,12 +350,12 @@ local function pos2linecol(t, data)
       local pos   = t.pos
       local line  = 1
       -- + 1 は改行の分
-      while pos > (data[line] + 1) do
-        pos   = pos - (data[line] + 1)
+      while pos > (#data[line] + 1) do
+        pos   = pos - (#data[line] + 1)
         line  = line + 1
       end
       t.line  = line
-      t.col   = pos
+      t.col   = utf8.len(string.sub(data[line], 1, pos))
       t.pos   = nil
     end
   end
@@ -474,7 +474,7 @@ local function parse(path, filename, global_define)
   t.filename  = filename
   local linecol = {}
   for s in string.gmatch(data, "[^\x0a]*") do
-    table.insert(linecol, #s)
+    table.insert(linecol, s)
   end
   pos2linecol(t, linecol)
   return t
