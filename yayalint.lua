@@ -302,7 +302,7 @@ local ScopeOuter = Lpeg.P({
   scopecaseothers = ScopeTbl.scopecaseothers,
   scopeswitch     = ScopeTbl.scopeswitch,
 })
-local Function  = Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Name, "name") * (SepEx ^ 0 * Lpeg.P(":") * SepEx ^ 0 * Lpeg.Cg(Alternative, "alter")) ^ -1 * SepEx ^ 0 * Lpeg.Cg(ScopeOuter, "body"))
+local Function  = Lpeg.Ct(Space ^ 0 * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Name, "name") * (SepEx ^ 0 * Lpeg.P(":") * SepEx ^ 0 * Lpeg.Cg(Alternative, "alter")) ^ -1 * SepEx ^ 0 * Lpeg.Cg(ScopeOuter, "body"))
 
 local Grammar = Lpeg.Ct((Function + Empty) ^ 0) * -1
 
