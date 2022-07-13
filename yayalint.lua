@@ -21,6 +21,8 @@ local Conv    = require("conv")
 local StringBuffer  = require("string_buffer")
 local ArgParse  = require("argparse.src.argparse")
 
+local AycDecoder  = require("ayc_decoder")
+
 local UserDefined = require("user_defined")
 local Levenshtein = require("levenshtein")
 
@@ -380,6 +382,9 @@ local function parse(path, filename, global_define)
     else
       return nil, string.format("not found:%s%s%s", OutputSep, path, filename)
     end
+  end
+  if string.sub(filename, -4) == ".ayc" then
+    data  = AycDecoder.decode(data)
   end
   data  = string.gsub(data, "\x0d\x0a", "\x0a")
   data  = string.gsub(data, "\x0d", "\x0a")
