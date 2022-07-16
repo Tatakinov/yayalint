@@ -219,7 +219,8 @@ local String  = Lpeg.P(
   string2_1 = ExpTbl.string2_1,
 }
 )
-local Alternative = Lpeg.P("void") + Lpeg.P("pool") + Lpeg.P("all") + Lpeg.P("last") + (Lpeg.P("melt_") ^ -1) * (Lpeg.P("random") + Lpeg.P("nonoverlap") + Lpeg.P("sequential") + Lpeg.P("array")) * (Lpeg.P("_pool") ^ -1)
+local Void  = Lpeg.P("void")
+local Alternative = Void + Lpeg.P("pool") + Lpeg.P("all") + Lpeg.P("last") + (Lpeg.P("melt_") ^ -1) * (Lpeg.P("random") + Lpeg.P("nonoverlap") + Lpeg.P("sequential") + Lpeg.P("array")) * (Lpeg.P("_pool") ^ -1)
 local AlternativeSep  = Lpeg.Ct(Space ^ 0 * Lpeg.Cg(Lpeg.P("--"), "altersep") * Space ^ 0 * (Comment1 + NL))
 local ForCondSep  = Lpeg.P(";")
 local ForCondition  = Lpeg.Ct(Lpeg.Cg(Lpeg.Ct(Expression), "init") * Space ^ 0 * ForCondSep * (Space ^ 0 * ForCondSep) ^ 0 * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression), "condition") * Space ^ 0 * ForCondSep * (Space ^ 0 * ForCondSep) ^ 0 * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression), "next"))
@@ -250,7 +251,7 @@ local ScopeTbl  = {
   scope2    = ScopeBegin * Lpeg.Ct(ScopeInner ^ 0) * (SepEx + Sep2) ^ 0 * ScopeEnd,
   scopeinner  = ((SepEx + Sep2) ^ 0 * (Lpeg.Ct(ScopeParallel)
   + Lpeg.Ct(Space ^ 0 * Lpeg.Ct(Lpeg.Cg((Scope1), "scope")) * Space ^ 0) + Lpeg.Ct(ScopeIf) + Lpeg.Ct(ScopeWhile) + Lpeg.Ct(ScopeFor) + Lpeg.Ct(ScopeForeach) + Lpeg.Ct(ScopeCase) + Lpeg.Ct(ScopeSwitch) + AlternativeSep
-  + (Space ^ 0 * Lpeg.Ct(Expression) * Space ^ 0)
+  + (Space ^ 0 * Void ^ -1 * Space ^ 0 * Lpeg.Ct(Expression) * Space ^ 0)
   + Empty) * (SepEx + Sep2) ^ 0),
   scopeparallel = Lpeg.Ct((Lpeg.P("parallel") + Lpeg.P("void")) * SepEx ^ 1 * Lpeg.Cg(Lpeg.Ct(Expression), "parallel")),
   scopeif   = ScopeIfIf * ((SepEx + Sep2) ^ 0 * ScopeIfElseIf) ^ 0 * ((SepEx + Sep2) ^ 0 * ScopeIfElse) ^ -1,
