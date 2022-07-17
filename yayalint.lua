@@ -667,7 +667,7 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
         if opt.force_read then
           lv[v].read  = true
         end
-        if line[i - 1] then
+        if line[i - 1] and (not(line[i - 1].enum) or not(line[i + 1]) or line[i + 1].enum) then
           lv[v].read  = true
           if not(lv[v].write) then
             if global then
@@ -723,7 +723,7 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
         if opt.var_foreach then
           lv[v].write = true
         end
-        if line[i - 1] then
+        if line[i - 1] and (not(line[i - 1].enum) or not(line[i + 1]) or line[i + 1].enum) then
           gv[v].read  = true
           if global and not(global[v].write) then
             if isFunc(col) then
