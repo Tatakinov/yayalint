@@ -20,7 +20,7 @@ yayalint\_lua.zipはlua.exeとyayalint.luaと依存ファイル群が入って�
 3. [luafilesystem(lfs)](https://github.com/keplerproject/luafilesystem) v1.8.0
 4. [argparse](https://github.com/mpeterv/argparse) v0.6.0
 5. [sol.hpp](https://github.com/ThePhD/sol2) v3.3.0
-6. [luastatic](https://github.com/ers35/luastatic) v0.0.12
+6. [luastatic](https://github.com/Tatakinov/luastatic) 最新コミット
 7. [path](https://github.com/luapower/path) 最新コミット
 
 1-7をダウンロードしてきてこんな感じのフォルダ構成にします。
