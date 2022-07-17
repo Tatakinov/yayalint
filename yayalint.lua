@@ -936,34 +936,59 @@ local function getFileList(path, filename, relative, ignore)
   relative  = relative or ""
   local file_list = {}
   --print(path, filename, relative)
-  local fh  = io.open(path .. relative .. filename, "r")
+  local filepath  = Path.normalize(relative .. filename, "win", {sep = "/"})
+  local fh  = io.open(path .. filepath, "r")
   if not(fh) then
     if not(ignore) then
       output:append(table.concat({"not found:", Path.normalize(path .. relative .. filename, "win", {sep = "/"})}, OutputSep)):append(NewLine)
     end
     return {}, "not found"
   end
+  local line_count  = 1
   for line in fh:lines() do
     line  = string.gsub(line, "//[^\x0a]*", "")
-    local filename   = string.match(line, "^ *include, *([0-9a-zA-Z_./\\-]+)")
+    local pos, filename   = string.match(line, "^( *include, *)([0-9a-zA-Z_./\\-]+)")
     ---[[
     if filename then
-      include(file_list, path, filename)
+      local fh  = io.open(path .. filename, "r")
+      if not(fh) then
+        output:append(table.concat({"not found:", filename, "at", filepath, "pos", line_count .. ":" .. (#pos + 1) .. ":" .. (#pos + #filename)}, OutputSep)):append(NewLine)
+      else
+        fh:close()
+        include(file_list, path, filename)
+      end
     end
     --]]
-    local filename  = string.match(line, "^ *includeEX, *([0-9a-zA-Z_./\\-]+)")
+    local pos, filename  = string.match(line, "^( *includeEX, *)([0-9a-zA-Z_./\\-]+)")
     ---[[
     if filename then
-      includeEX(file_list, path, relative, filename)
+      local fh  = io.open(path .. relative .. filename, "r")
+      if not(fh) then
+        output:append(table.concat({"not found:", relative .. filename, "at", filepath, "pos:", line_count .. ":" .. (#pos + 1) .. ":" .. (#pos + #filename)}, OutputSep)):append(NewLine)
+      else
+        fh:close()
+        includeEX(file_list, path, relative, filename)
+      end
     end
     --]]
-    local dirname = string.match(line, "^ *dicdir, *([0-9a-zA-Z_./\\-]+)")
+    local pos, dirname = string.match(line, "^( *dicdir, *)([0-9a-zA-Z_./\\-]+)")
     if dirname then
-      dicdir(file_list, path, relative, dirname)
+      local attr  = Lfs.attributes(path .. relative .. dirname) or {}
+      if attr.mode == "directory" then
+        dicdir(file_list, path, relative, dirname)
+      else
+        output:append(table.concat({"not found:", relative .. dirname, "at", filepath, "pos:", line_count .. ":" .. (#pos + 1) .. ":" .. (#pos + #dirname)}, OutputSep)):append(NewLine)
+      end
     end
-    local filename  = string.match(line, "^ *dic, *([0-9a-zA-Z_./\\-]+)")
+    local pos, filename  = string.match(line, "^( *dic, *)([0-9a-zA-Z_./\\-]+)")
     if filename then
-      table.insert(file_list, relative .. filename)
+      local fh  = io.open(path .. relative .. filename, "r")
+      if not(fh) then
+        output:append(table.concat({"not found:", relative .. filename, "at", filepath, "pos:", line_count .. ":" .. (#pos + 1) .. ":" .. (#pos + #filename)}, OutputSep)):append(NewLine)
+      else
+        fh:close()
+        table.insert(file_list, relative .. filename)
+      end
     end
     local filename  = string.match(line, "^ *dicif, *([0-9a-zA-Z_./\\-]+)")
     if filename then
@@ -973,6 +998,7 @@ local function getFileList(path, filename, relative, ignore)
         table.insert(file_list, relative .. filename)
       end
     end
+    line_count  = line_count  + 1
   end
   fh:close()
   return file_list
