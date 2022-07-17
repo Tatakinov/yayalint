@@ -116,7 +116,7 @@ local ExpressionInString  = Lpeg.P({
   ExpS1,
   exp1  = ((ExpS2) * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp1, "enum")) * (ExpSep * ExpS2) ^ -1) ^ 0 + (Lpeg.Ct(Lpeg.Cg(ExpOp1, "enum")) * (ExpS2) ^ -1) ^ 1),
   exp2  = (ExpS3 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp2, "op_assign")) * ExpSep * ExpS3) ^ 0),
-  exp3  = (ExpS4 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp3, "assign")) * ExpSep * ExpS4) ^ 0),
+  exp3  = (ExpS4 * (ExpSep * Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(ExpOp3, "assign")) * ExpSep * ExpS4) ^ 0),
   exp4  = (ExpS5 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp4, "or")) * ExpSep * ExpS5) ^ 0),
   exp5  = (ExpS6 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp5, "and")) * ExpSep * ExpS6) ^ 0),
   exp6  = (ExpS7 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp6, "comparison")) * ExpSep * ExpS7) ^ 0),
@@ -157,7 +157,7 @@ local ExpTbl  =
 {
   exp1  = (Exp2 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp1, "enum")) * (ExpSep * Exp2) ^ -1) ^ 0 + (Lpeg.Ct(Lpeg.Cg(ExpOp1, "enum")) * ExpSep * (Exp2) ^ -1) ^ 1),
   exp2  = (Exp3 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp2, "op_assign")) * ExpSep * Exp3) ^ 0),
-  exp3  = (Exp4 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp3, "assign")) * ExpSep * Exp4) ^ 0),
+  exp3  = (Exp4 * (ExpSep * Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(ExpOp3, "assign")) * ExpSep * Exp4) ^ 0),
   exp4  = (Exp5 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp4, "or")) * ExpSep * Exp5) ^ 0),
   exp5  = (Exp6 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp5, "and")) * ExpSep * Exp6) ^ 0),
   exp6  = (Exp7 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp6, "comparison")) * ExpSep * Exp7) ^ 0),
@@ -523,6 +523,21 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
       lv[k] = v
     end
   end
+
+  local function assignmentInCondition(t, filename)
+    for _, v in ipairs(t) do
+      if type(v) == "table" then
+        if v.assign then
+          print(filename, v.line, v.col)
+          output:append(table.concat({"assinment operator exists in conditional statement:", "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
+        end
+        if #v > 0 then
+          assignmentInCondition(v, filename)
+        end
+      end
+    end
+  end
+
   for _, line in ipairs(scope) do
     if type(line) ~= "table" then
       print("line:", line)
@@ -548,6 +563,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
         })
       end
       if col.scope_if then
+        if global then
+          assignmentInCondition(col.condition, filename)
+        end
         recursive({col.condition}, gv, lv, filename, funcname, global, {
           overwrite   = true,
           force_read  = true,
@@ -555,6 +573,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
         recursive(col.scope_if, gv, lv, filename, funcname, global)
       end
       if col.scope_elseif then
+        if global then
+          assignmentInCondition(col.condition, filename)
+        end
         recursive({col.condition}, gv, lv, filename, funcname, global, {
           overwrite   = true,
           force_read  = true,
@@ -565,6 +586,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
         recursive(col.scope_else[1], gv, lv, filename, funcname, global)
       end
       if col.scope_while then
+        if global then
+          assignmentInCondition(col.condition, filename)
+        end
         recursive({col.condition}, gv, lv, filename, funcname, global, {
           overwrite   = true,
           force_read  = true,
@@ -581,6 +605,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
         recursive({col.condition[1].init}, gv, lv, filename, funcname, global, {
           overwrite = true,
         })
+        if global then
+          assignmentInCondition(col.condition[1].condition or {}, filename)
+        end
         recursive({col.condition[1].condition}, gv, lv, filename, funcname, global, {
           overwrite   = true,
           force_read  = true,
