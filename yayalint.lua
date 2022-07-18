@@ -529,7 +529,7 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
       if type(v) == "table" then
         if v.assign then
           print(filename, v.line, v.col)
-          output:append(table.concat({"assinment operator exists in conditional statement:", "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
+          output:append(table.concat({"assinment operator exists in conditional statement:", v.assign, "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
         end
         if #v > 0 then
           assignmentInCondition(v, filename)
