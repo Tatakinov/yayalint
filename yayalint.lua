@@ -36,7 +36,7 @@ end
 local Ascii   = Lpeg.R("\x00\x7f")
 local NumberZ = Lpeg.S("+-") ^ -1 * (Lpeg.P("0") + (Lpeg.R("19") * Lpeg.R("09") ^ 0))
 local NumberX = Lpeg.S("+-") ^ -1 * Lpeg.P("0x") * (Lpeg.R("09") + Lpeg.R("af"))  ^ 1
-local Number  = Lpeg.Cg(NumberX + (NumberZ * (Lpeg.P(".") * Lpeg.R("09") ^ 1) ^ -1), "num")
+local NumberR = Lpeg.Cg(NumberX + (NumberZ * (Lpeg.P(".") * Lpeg.R("09") ^ 1) ^ -1), "num")
 local MBHead  = Lpeg.R("\xc2\xf4")
 local MBData  = Lpeg.R("\x80\xbf")
 local NL      = Lpeg.S("\x0a")
@@ -56,6 +56,7 @@ local ComparisonOperator = Lpeg.P("==") + Lpeg.P("!=") + Lpeg.P("<=") + Lpeg.P("
 local AssignmentOperator  = Lpeg.P("=") + Lpeg.P(":=") + Lpeg.P("+=") + Lpeg.P("-=") + Lpeg.P("*=") + Lpeg.P("/=") + Lpeg.P("%=") + Lpeg.P("+:=") + Lpeg.P("-:=") + Lpeg.P("*:=") + Lpeg.P("/:=") + Lpeg.P("%:=") + Lpeg.P(",=")
 local Operator  = Lpeg.S("()[]&") + Lpeg.P("++") + Lpeg.P("--") + ComparisonOperator + Lpeg.P("_in_") + Lpeg.P("!_in_") + LogicalOperator + AssignmentOperator
 local InvalidName = Lpeg.S(" !\"#$%&()+,-*/:;<=>?@[]'{|}\t")
+local Number  = NumberR * Lpeg.B( - (Char - InvalidName))
 local InvalidNameHead = Lpeg.R("09") + InvalidName
 local Name  = (((Lpeg.B( - (InvalidNameHead + (Reserve * (-1 + InvalidName + Sep)))) + Lpeg.R("09") ^ 1) * (Lpeg.B(- InvalidName) * Char) ^ 1))
 
