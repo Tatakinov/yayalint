@@ -476,11 +476,26 @@ local function parse(path, filename, global_define)
     end
     index = index + 1
   end
+  local c = ""
+  local p = 0
+  local err_pos = col == 1 and (#err_line + 1) or col
+  for pos, code in utf8.codes(err_line) do
+    if pos < err_pos then
+      p = pos
+      c = utf8.char(code)
+    end
+  end
+  col = utf8.len(string.sub(err_line, 1, p - 1)) + 1
+  -- \tをそのまま出力するとバグるので変換。
+  -- 他の見えない文字も変換するべき？
+  if c == "\t" then
+    c = "\\t"
+  end
   if not(t) then
     if args.nosyntaxerror then
       return nil, nil
     else
-      return nil, table.concat({Error[label], filename, "before", "line", line, "col", col, "data", err_line}, OutputSep)
+      return nil, table.concat({Error[label], c, "at", filename, "pos:", line .. ":" .. col}, OutputSep)
     end
   end
   t.filename  = filename
