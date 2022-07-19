@@ -432,18 +432,19 @@ local function parse(path, filename, global_define)
       local before, after = string.match(line, "#define[ \t]*([^ \t]+)[ \t]+(.+)")
       if before and after then
         --print("DEFINE:", before, after)
-        --print(string.format("DEFINE:\t%s\t%s", escape(before), escape(after)))
+        --print("DEFINE", escape(before), string.gsub(after, "%%", "%%%%"))
         table.insert(define, {
           before  = escape(before),
-          after   = after,
+          after   = string.gsub(after, "%%", "%%%%"),
         })
       end
       local before, after = string.match(line, "#globaldefine[ \t]*([^ \t]+)[ \t]+(.+)")
       if before and after then
         --print("GLOBALDEFINE:", before, after)
+        --print("GLOBAL DEFINE", escape(before), string.gsub(after, "%%", "%%%%"))
         table.insert(global_define, {
           before  = escape(before),
-          after   = after,
+          after   = string.gsub(after, "%%", "%%%%"),
         })
       end
       str:append("\x0a")
