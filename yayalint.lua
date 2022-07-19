@@ -57,7 +57,7 @@ local AssignmentOperator  = Lpeg.P("=") + Lpeg.P(":=") + Lpeg.P("+=") + Lpeg.P("
 local Operator  = Lpeg.S("()[]&") + Lpeg.P("++") + Lpeg.P("--") + ComparisonOperator + Lpeg.P("_in_") + Lpeg.P("!_in_") + LogicalOperator + AssignmentOperator
 local InvalidName = Lpeg.S(" !\"#$%&()+,-*/:;<=>?@[]'{|}\t")
 local InvalidNameHead = Lpeg.R("09") + InvalidName
-local Name  = ((Lpeg.B( - (InvalidNameHead + (Reserve * (-1 + InvalidName + Sep)))) * (Lpeg.B(- InvalidName) * Char) ^ 1))
+local Name  = (((Lpeg.B( - (InvalidNameHead + (Reserve * (-1 + InvalidName + Sep)))) + Lpeg.R("09") ^ 1) * (Lpeg.B(- InvalidName) * Char) ^ 1))
 
 local ScopeBegin  = Lpeg.P("{")
 local ScopeEnd    = Lpeg.P("}")
