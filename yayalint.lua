@@ -995,7 +995,7 @@ local function getFileList(path, filename, relative, ignore)
     if filename then
       local fh  = io.open(path .. filename, "r")
       if not(fh) then
-        output:append(table.concat({"not found:", filename, "at", filepath, "pos", line_count .. ":" .. (#pos + 1) .. ":" .. (#pos + #filename)}, OutputSep)):append(NewLine)
+        output:append(table.concat({"not found:", filename, "at", filepath, "pos", line_count .. ":" .. (#pos + 1)}, OutputSep)):append(NewLine)
       else
         fh:close()
         include(file_list, path, filename)
@@ -1007,7 +1007,7 @@ local function getFileList(path, filename, relative, ignore)
     if filename then
       local fh  = io.open(path .. relative .. filename, "r")
       if not(fh) then
-        output:append(table.concat({"not found:", relative .. filename, "at", filepath, "pos:", line_count .. ":" .. (#pos + 1) .. ":" .. (#pos + #filename)}, OutputSep)):append(NewLine)
+        output:append(table.concat({"not found:", filename, "at", filepath, "pos:", line_count .. ":" .. (#pos + 1)}, OutputSep)):append(NewLine)
       else
         fh:close()
         includeEX(file_list, path, relative, filename)
@@ -1020,14 +1020,14 @@ local function getFileList(path, filename, relative, ignore)
       if attr.mode == "directory" then
         dicdir(file_list, path, relative, dirname)
       else
-        output:append(table.concat({"not found:", relative .. dirname, "at", filepath, "pos:", line_count .. ":" .. (#pos + 1) .. ":" .. (#pos + #dirname)}, OutputSep)):append(NewLine)
+        output:append(table.concat({"not found:", dirname, "at", filepath, "pos:", line_count .. ":" .. (#pos + 1)}, OutputSep)):append(NewLine)
       end
     end
     local pos, filename  = string.match(line, "^( *dic, *)([0-9a-zA-Z_./\\-]+)")
     if filename then
       local fh  = io.open(path .. relative .. filename, "r")
       if not(fh) then
-        output:append(table.concat({"not found:", relative .. filename, "at", filepath, "pos:", line_count .. ":" .. (#pos + 1) .. ":" .. (#pos + #filename)}, OutputSep)):append(NewLine)
+        output:append(table.concat({"not found:", filename, "at", filepath, "pos:", line_count .. ":" .. (#pos + 1)}, OutputSep)):append(NewLine)
       else
         fh:close()
         table.insert(file_list, relative .. filename)
