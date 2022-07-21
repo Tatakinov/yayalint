@@ -263,7 +263,7 @@ local ScopeTbl  = {
   scopefor  = Lpeg.Ct(Space ^ 0 * Lpeg.P("for") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * ForCondition) + (Space ^ 0 * Lpeg.P("(") * ForCondition * Lpeg.P(")"))), "condition") * (SepEx + Sep2) ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_for")),
   scopeforeach  = Lpeg.Ct(Space ^ 0 * Lpeg.P("foreach") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * ForeachCondition) + (Space ^ 0 * Lpeg.P("(") * ForeachCondition * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_foreach")),
   scopecase   = ScopeCaseCase,
-  scopecasecase = Lpeg.Ct(Space ^ 0 * Lpeg.P("case") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(SepEx ^ 0 * Lpeg.P("{" ) * Lpeg.Ct((SepEx ^ 0 * ScopeCaseWhen + (ScopeInner)) ^ 0 * (SepEx ^ 0 * ScopeCaseOthers) ^ -1 * Lpeg.Ct(ScopeInner ^ 0)) * SepEx ^ 0 * Lpeg.P("}"), "scope_case")),
+  scopecasecase = Lpeg.Ct(Space ^ 0 * Lpeg.P("case") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(SepEx ^ 0 * Lpeg.P("{" ) * Lpeg.Ct((SepEx ^ 0 * ScopeCaseWhen + SepEx ^ 0 * (Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(ScopeInner, "case_raw")))) ^ 0 * (SepEx ^ 0 * ScopeCaseOthers) ^ -1 * SepEx ^ 0 * Lpeg.Ct((Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * ScopeInner)) ^ 0)) * SepEx ^ 0 * Lpeg.P("}"), "scope_case")),
   scopecasewhen = Lpeg.Ct(Space ^ 0 * Lpeg.P("when") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(WhenCondition + (Lpeg.P("(") * WhenCondition * Lpeg.P(")"))), "condition") * Lpeg.Cg(SepEx ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression * (Sep + Sep2) ^ 0)), "scope_when")),
   scopecaseothers = Lpeg.Ct(Space ^ 0 * Lpeg.P("others") * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)) + SepEx ^ 0 * Scope1, "scope_others")),
   scopeswitch = Lpeg.Ct(Space ^ 0 * Lpeg.P("switch") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_switch")),
@@ -556,7 +556,8 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
 
   for _, line in ipairs(scope) do
     if type(line) ~= "table" then
-      print("line:", line)
+      -- TODO error
+      --print("line:", line)
     end
     for i, col in ipairs(line) do
       if #col > 0 then
@@ -650,26 +651,18 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
         })
         recursive(col.scope_foreach[1], gv, lv, filename, funcname, global)
       end
+      if col.case_raw then
+        if global then
+          if not(args.nowarning) then
+            output:append(table.concat({"case statement contains a clause that is neither a when clause nor others clause:", "", "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+          end
+        end
+      end
       if col.scope_case then
         recursive({col.condition}, gv, lv, filename, funcname, global, {
           overwrite   = true,
           force_read  = true,
         })
-        local doubt = false
-        for _, v in ipairs(col.scope_case) do
-          -- when節とothers節以外はネストが1つ深い
-          if #v > 0 then
-            doubt = true
-            break
-          end
-        end
-        if doubt then
-          if global then
-            if not(args.nowarning) then
-              output:append(table.concat({"case statement contains a clause that is neither a when clause nor others clause:", "", "at", filename, funcname}, OutputSep)):append(NewLine)
-            end
-          end
-        end
         recursive({col.scope_case}, gv, lv, filename, funcname, global)
       end
 
