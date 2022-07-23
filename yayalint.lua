@@ -541,14 +541,21 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
     end
   end
 
-  local function assignmentInCondition(t, filename)
-    for _, v in ipairs(t) do
+  local function assignmentInCondition(t, filename, has_comparison)
+    local function child(t)
+      return #t == 1 and child(t[1]) or t
+    end
+    for i, v in ipairs(t) do
       if type(v) == "table" then
-        if v.assign then
+        if v.assign and not(has_comparison) then
           output:append(table.concat({"assignment operator exists in conditional statement:", v.assign, "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
         end
         if #v > 0 then
-          assignmentInCondition(v, filename)
+          local pre = t[i - 1] or {}
+          local post  = t[i + 1] or {}
+          pre = pre.comparison or pre["not"]
+          post  = post.comparison or post["not"]
+          assignmentInCondition(child(v), filename, pre or post)
         end
       end
     end
