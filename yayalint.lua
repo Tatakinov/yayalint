@@ -127,9 +127,9 @@ local ExpressionInString  = Lpeg.P({
   exp10 = (ExpS11 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp10, "inc"))) ^ -1),
   exp11 = ((Lpeg.Ct(Lpeg.Cg(ExpOp11, "not")) * ExpSep) ^ -1 * ExpS12),
   exp12 = Lpeg.Ct(Number 
-  + (String1_2 + String2_2) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index") ^ 0
-  + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(LocalVariable, "l")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index") ^ 0
-  + (Lpeg.P("(") * ExpSep * ExpS1 * ExpSep * Lpeg.P(")")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index") ^ 0
+  + (String1_2 + String2_2) * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index")) ^ 0), "append")
+  + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(LocalVariable, "l")) * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index")) ^ 0), "append")
+  + (Lpeg.P("(") * ExpSep * ExpS1 * ExpSep * Lpeg.P(")")) * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index")) ^ 0), "append")
   + ((Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(GlobalVariable, "g"))
     * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct( ExpSep * (Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index")
       + (Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(ExpS1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(ExpS1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")))) ^ 0), "append"))
@@ -168,10 +168,10 @@ local ExpTbl  =
   exp10 = (Exp11 * (ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp10, "inc"))) ^ -1),
   exp11 = ((ExpSep * Lpeg.Ct(Lpeg.Cg(ExpOp11, "not")) * ExpSep) ^ -1 * Exp12),
   exp12 = Lpeg.Ct(Number 
-  + StringV * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") ^ 0
+  + StringV * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index")) ^ 0), "append")
   + Return + Break + Continue
-  + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(LocalVariable, "l")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") ^ 0
-  + (Lpeg.P("(") * ExpSep * Exp1 * ExpSep * Lpeg.P(")")) * Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index") ^ 0
+  + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(LocalVariable, "l")) * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index")) ^ 0), "append")
+  + (Lpeg.P("(") * ExpSep * Exp1 * ExpSep * Lpeg.P(")")) * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index")) ^ 0), "append")
   + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(GlobalVariable, "g"))
     * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct( ExpSep * (Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index")
       + (Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(Exp1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(Exp1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")))) ^ 0), "append")
