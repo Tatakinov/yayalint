@@ -43,10 +43,10 @@ local NL      = Lpeg.S("\x0a")
 local Char    = Ascii + (MBHead * (MBData ^ 1)) - NL
 local Comment2  = (Lpeg.P("/*") * ((Lpeg.B( - Lpeg.P("*/")) * (Char + NL)) ^ 0) * Lpeg.P("*/"))
 local Space   = Lpeg.S(" \t") + Lpeg.P("/\x0a") + Comment2
-local Comment1  = (Lpeg.P("//") * Char ^ 1 * NL)
-local Sep     = Lpeg.P("\x0a") + Comment1
+local Comment1  = (Lpeg.P("//") * Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Char ^ 0, "comment")) * NL)
+local Sep     = NL + Comment1
 local Sep2    = Lpeg.P(";")
-local Empty   = (Space + (Lpeg.P("//") * Char ^ 0)) ^ 0 * NL
+local Empty   = (Space + (Lpeg.P("//") * Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Char ^ 0, "comment")))) ^ 0 * NL
 local SepEx   = (Sep + Empty + Space)
 
 local Reserve = Lpeg.P("if") + Lpeg.P("elseif") + Lpeg.P("else") + Lpeg.P("case") + Lpeg.P("when") + Lpeg.P("others") + Lpeg.P("switch") + Lpeg.P("while") + Lpeg.P("for") + Lpeg.P("break") + Lpeg.P("continue") + Lpeg.P("return") + Lpeg.P("foreach")
@@ -58,7 +58,7 @@ local Operator  = Lpeg.S("()[]&") + Lpeg.P("++") + Lpeg.P("--") + ComparisonOper
 local InvalidName = Lpeg.S(" !\"#$%&()+,-*/:;<=>?@[]'{|}\t")
 local Number  = NumberR * Lpeg.B( - (Char - InvalidName))
 local InvalidNameHead = Lpeg.R("09") + InvalidName
-local Name  = (((Lpeg.B( - (InvalidNameHead + (Reserve * (-1 + InvalidName + Sep)))) + Lpeg.R("09") ^ 1) * (Lpeg.B(- InvalidName) * Char) ^ 1))
+local Name  = (((Lpeg.B( - (InvalidNameHead + (Reserve * (-1 + InvalidName + NL)))) + Lpeg.R("09") ^ 1) * (Lpeg.B(- InvalidName) * Char) ^ 1))
 
 local ScopeBegin  = Lpeg.P("{")
 local ScopeEnd    = Lpeg.P("}")
@@ -74,7 +74,7 @@ local Continue  = Lpeg.Ct(Space ^ 0 * Lpeg.Cg(Lpeg.P("continue"), "special"))
 
 local StringSep1 = Lpeg.P("\"")
 local StringSep2 = Lpeg.P("'")
-local String1_2 = (StringSep2 * Lpeg.Cg(((Lpeg.P("/") * Space ^ 0 * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Char ^ 0 * NL) ^ 0) + (Lpeg.B( - StringSep2) * Char)) ^ 0, "string") * StringSep2)
+local String1_2 = (StringSep2 * Lpeg.Cg(((Lpeg.P("/") * Space ^ 0 * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Char ^ 0, "comment")) * NL) ^ 0) + (Lpeg.B( - StringSep2) * Char)) ^ 0, "string") * StringSep2)
 local String2_2 = (Lpeg.P("<<") * StringSep2 * Lpeg.Cg(((NL) + (Lpeg.B( - (StringSep2 * Lpeg.P(">>"))) * Char)) ^ 0, "string") * StringSep2 * Lpeg.P(">>"))
 
 local ExpSep  = (Space) ^ 0
@@ -135,7 +135,7 @@ local ExpressionInString  = Lpeg.P({
       + (Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(ExpS1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(ExpS1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")))) ^ 0), "append"))
   + (Lpeg.P("(") * ExpSep * ExpS1 * ExpSep * Lpeg.P(")"))),
 })
-local String1_1 = (StringSep1 * Lpeg.Cg(Lpeg.Ct(((Lpeg.P("%(") * ExpSep * (ExpressionInString) * ExpSep * Lpeg.P(")")) + Lpeg.Ct(Lpeg.Cg((((Lpeg.P("/") * Space ^ 0 * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Char ^ 0 * NL) ^ 0)) + Lpeg.B( - (StringSep1 + Lpeg.P("%("))) * Char) ^ 1, "text"))) ^ 0), "string") * StringSep1)
+local String1_1 = (StringSep1 * Lpeg.Cg(Lpeg.Ct(((Lpeg.P("%(") * ExpSep * (ExpressionInString) * ExpSep * Lpeg.P(")")) + Lpeg.Ct(Lpeg.Cg((((Lpeg.P("/") * Space ^ 0 * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Char ^ 0, "comment")) * NL) ^ 0)) + Lpeg.B( - (StringSep1 + Lpeg.P("%("))) * Char) ^ 1, "text"))) ^ 0), "string") * StringSep1)
 local String1 = String1_1 + String1_2
 
 local String2_1 = Lpeg.V("string2_1")
@@ -256,11 +256,11 @@ local ScopeTbl  = {
   + Empty) * (SepEx + Sep2) ^ 0),
   scopeparallel = Lpeg.Ct((Lpeg.P("parallel") + Lpeg.P("void")) * SepEx ^ 1 * Lpeg.Cg(Lpeg.Ct(Expression), "parallel")),
   scopeif   = ScopeIfIf * ((SepEx + Sep2) ^ 0 * ScopeIfElseIf) ^ 0 * ((SepEx + Sep2) ^ 0 * ScopeIfElse) ^ -1,
-  scopeifif = Lpeg.Ct(Space ^ 0 * Lpeg.P("if") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * Lpeg.Cg((SepEx + Sep2) ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression * (Sep + Sep2) ^ 0)), "scope_if")),
-  scopeifelseif = Lpeg.Ct(Space ^ 0 * Lpeg.P("elseif") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * Lpeg.Cg(SepEx ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)), "scope_elseif")),
+  scopeifif = Lpeg.Ct(Space ^ 0 * Lpeg.P("if") * Space ^ 0 * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * Lpeg.Cg((SepEx + Sep2) ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression * (Sep + Sep2) ^ 0)), "scope_if")),
+  scopeifelseif = Lpeg.Ct(Space ^ 0 * Lpeg.P("elseif") * Space ^ 0 * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * Lpeg.Cg(SepEx ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)), "scope_elseif")),
   scopeifelse = Lpeg.Ct(Space ^ 0 * Lpeg.P("else") * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)) + (SepEx + Sep2) ^ 0 * Scope1, "scope_else")),
-  scopewhile  = Lpeg.Ct(Space ^ 0 * Lpeg.P("while") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * Expression) + (Space ^ 0 * Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * (SepEx + Sep2) ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_while")),
-  scopefor  = Lpeg.Ct(Space ^ 0 * Lpeg.P("for") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * ForCondition) + (Space ^ 0 * Lpeg.P("(") * ForCondition * Lpeg.P(")"))), "condition") * (SepEx + Sep2) ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_for")),
+  scopewhile  = Lpeg.Ct(Space ^ 0 * Lpeg.P("while") * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * Expression) + (Space ^ 0 * Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * (SepEx + Sep2) ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_while")),
+  scopefor  = Lpeg.Ct(Space ^ 0 * Lpeg.P("for") * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * ForCondition) + (Space ^ 0 * Lpeg.P("(") * ForCondition * Lpeg.P(")"))), "condition") * (SepEx + Sep2) ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_for")),
   scopeforeach  = Lpeg.Ct(Space ^ 0 * Lpeg.P("foreach") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * ForeachCondition) + (Space ^ 0 * Lpeg.P("(") * ForeachCondition * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_foreach")),
   scopecase   = ScopeCaseCase,
   scopecasecase = Lpeg.Ct(Space ^ 0 * Lpeg.P("case") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(SepEx ^ 0 * Lpeg.P("{" ) * Lpeg.Ct((SepEx ^ 0 * ScopeCaseWhen + SepEx ^ 0 * (Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(ScopeInner, "case_raw")))) ^ 0 * (SepEx ^ 0 * ScopeCaseOthers) ^ -1 * SepEx ^ 0 * Lpeg.Ct((Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * ScopeInner)) ^ 0)) * SepEx ^ 0 * Lpeg.P("}"), "scope_case")),
@@ -520,6 +520,42 @@ local function isFunc(e)
   return false
 end
 
+local annotation  = {}
+local function appendLintAnnotation(str, filename, line)
+  if not(annotation[filename]) then
+    annotation[filename]  = {}
+  end
+  if string.match(str, "^lint on") or string.match(str, "^lint enable") then
+    table.insert(annotation[filename], {
+      type  = "enable",
+      line  = line,
+    })
+  end
+  if string.match(str, "^lint off") or string.match(str, "^lint disable") then
+    table.insert(annotation[filename], {
+      type  = "disable",
+      line  = line,
+    })
+  end
+end
+
+local function isLintEnable(filename, line)
+  local t = annotation[filename] or {}
+  local is_enable = true
+  for _, v in ipairs(t) do
+    if v.line <= line then
+      if v.type == "enable" then
+        is_enable = true
+      elseif v.type == "disable" then
+        is_enable = false
+      end
+    else
+      break
+    end
+  end
+  return is_enable
+end
+
 local function recursive(scope, gv, upper, filename, funcname, global, opt)
   opt = opt or {
     var_foreach = false,
@@ -548,7 +584,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
     for i, v in ipairs(t) do
       if type(v) == "table" then
         if v.assign and not(has_comparison) then
-          output:append(table.concat({"assignment operator exists in conditional statement:", v.assign, "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
+          if isLintEnable(filename, v.line) then
+            output:append(table.concat({"assignment operator exists in conditional statement:", v.assign, "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
+          end
         end
         if #v > 0 then
           local pre = t[i - 1] or {}
@@ -566,11 +604,21 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
       -- TODO error
       --print("line:", line)
     end
+    if line.comment then
+      if not(global) then
+        appendLintAnnotation(line.comment, filename, line.line)
+      end
+    end
     for i, col in ipairs(line) do
       if #col > 0 then
         recursive({col}, gv, lv, filename, funcname, global, {
           overwrite = true,
         })
+      end
+      if col.comment then
+        if not(global) then
+          appendLintAnnotation(col.comment, filename, col.line)
+        end
       end
       if col.append then
         recursive({col.append}, gv, lv, filename, funcname, global, {
@@ -661,7 +709,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
       if col.case_raw then
         if global then
           if not(args.nowarning) then
-            output:append(table.concat({"case statement contains a clause that is neither a when clause nor others clause:", "", "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+            if isLintEnable(filename, col.line) then
+              output:append(table.concat({"case statement contains a clause that is neither a when clause nor others clause:", "", "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+            end
           end
         end
       end
@@ -717,7 +767,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if not(args.noundefined) and not(args.nolocal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
                   local maybe = Levenshtein(v, lv, gv) or ""
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  if isLintEnable(filename, col.line) then
+                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  end
                 end
               end
             end
@@ -732,7 +784,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
                 if not(args.noundefined) and not(args.nolocal) then
                   if not(UserDefined.isUserDefinedVariable(v)) then
                     local maybe = Levenshtein(v, lv, gv) or ""
-                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                    if isLintEnable(filename, col.line) then
+                      output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                    end
                   end
                 end
               end
@@ -745,7 +799,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if not(args.noundefined) and not(args.nolocal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
                   local maybe = Levenshtein(v, lv, gv) or ""
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  if isLintEnable(filename, col.line) then
+                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  end
                 end
               end
             end
@@ -773,14 +829,18 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedFunction(v)) then
                   local maybe = Levenshtein(v, gv, lv) or ""
-                  output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  if isLintEnable(filename, col.line) then
+                    output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  end
                 end
               end
             else
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
                   local maybe = Levenshtein(v, gv, lv) or ""
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  if isLintEnable(filename, col.line) then
+                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  end
                 end
               end
             end
@@ -792,14 +852,18 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if isFunc(col) then
                 if not(args.nounused) and not(args.noglobal) and not(args.no_unused_global) then
                   if not(UserDefined.isUserUsedFunction(v)) then
-                    output:append(table.concat({"unused function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                    if isLintEnable(filename, col.line) then
+                      output:append(table.concat({"unused function:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                    end
                   end
                 end
               else
                 if global[v].write and not(global[v].read) then
                   if not(args.nounused) and not(args.noglobal) and not(args.no_unused_global) then
                     if not(UserDefined.isUserUsedVariable(v)) then
-                      output:append(table.concat({"unused variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                      if isLintEnable(filename, col.line) then
+                        output:append(table.concat({"unused variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col}, OutputSep)):append(NewLine)
+                      end
                     end
                   end
                 end
@@ -812,14 +876,18 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
                 if not(args.noundefined) and not(args.noglobal) then
                   if not(UserDefined.isUserDefinedFunction(v)) then
                     local maybe = Levenshtein(v, gv, lv) or ""
-                    output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                    if isLintEnable(filename, col.line) then
+                      output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                    end
                   end
                 end
               else
                 if not(args.noundefined) and not(args.noglobal) then
                   if not(UserDefined.isUserDefinedVariable(v)) then
                     local maybe = Levenshtein(v, gv, lv) or ""
-                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                    if isLintEnable(filename, col.line) then
+                      output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                    end
                   end
                 end
               end
@@ -832,14 +900,18 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedFunction(v)) then
                   local maybe = Levenshtein(v, gv, lv) or ""
-                  output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  if isLintEnable(filename, col.line) then
+                    output:append(table.concat({"read undefined function:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  end
                 end
               end
             else
               if not(args.noundefined) and not(args.noglobal) then
                 if not(UserDefined.isUserDefinedVariable(v)) then
                   local maybe = Levenshtein(v, gv, lv) or ""
-                  output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  if isLintEnable(filename, col.line) then
+                    output:append(table.concat({"read undefined variable:", v, "at", filename, "pos:", col.line .. ":" .. col.col, "maybe:", maybe}, OutputSep)):append(NewLine)
+                  end
                 end
               end
             end
@@ -866,7 +938,9 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
         if global then
           if not(args.nolocal) and not(args.nounused) then
             if not(UserDefined.isUserDefinedVariable(k)) then
-              output:append(table.concat({"unused variable:", k, "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
+              if isLintEnable(filename, v.line) then
+                output:append(table.concat({"unused variable:", k, "at", filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
+              end
             end
           end
         end
@@ -881,16 +955,20 @@ local function interpret(data)
     --print("filename", file.filename)
     for _, func in ipairs(file) do
       --print("function", func.name)
-      if gv[func.name] == nil then
-        gv[func.name] = {
-          read  = false,
-          write = false,
-          line  = func.line,
-          col   = func.col,
-        }
+      if func.comment then
+        appendLintAnnotation(func.comment, file.filename, func.line)
+      else
+        if gv[func.name] == nil then
+          gv[func.name] = {
+            read  = false,
+            write = false,
+            line  = func.line,
+            col   = func.col,
+          }
+        end
+        gv[func.name].write = true
+        recursive(func.body, gv, {}, file.filename, func.name)
       end
-      gv[func.name].write = true
-      recursive(func.body, gv, {}, file.filename, func.name)
     end
   end
   --dump(gv)
@@ -898,15 +976,19 @@ local function interpret(data)
     args.no_unused_global  = UserDefined.isSuppressWarning(file.filename)
     for _, func in ipairs(file) do
       --print("function", func.name)
-      local v = gv[func.name]
-      if v.write and not(v.read) then
-        if not(args.nounused) and not(args.nofunction) and not(args.no_unused_global) then
-          if not(UserDefined.isUserUsedFunction(func.name)) then
-            output:append(table.concat({"unused function:", func.name, "at", file.filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
+      if not(func.comment) then
+        local v = gv[func.name]
+        if v.write and not(v.read) then
+          if not(args.nounused) and not(args.nofunction) and not(args.no_unused_global) then
+            if not(UserDefined.isUserUsedFunction(func.name)) then
+              if isLintEnable(file.filename, v.line) then
+                output:append(table.concat({"unused function:", func.name, "at", file.filename, "pos:", v.line .. ":" .. v.col}, OutputSep)):append(NewLine)
+              end
+            end
           end
         end
+        recursive(func.body, {}, {}, file.filename, func.name, gv)
       end
-      recursive(func.body, {}, {}, file.filename, func.name, gv)
     end
   end
   for k, v in pairs(gv) do
