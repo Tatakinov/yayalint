@@ -820,7 +820,7 @@ local function recursive(scope, gv, upper, filename, funcname, global, opt)
           gv[v].read  = true
         end
         if opt.var_foreach then
-          lv[v].write = true
+          gv[v].write = true
         end
         if line[i - 1] and (not(line[i - 1].enum) or not(line[i + 1]) or line[i + 1].enum) then
           gv[v].read  = true
