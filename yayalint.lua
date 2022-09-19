@@ -247,6 +247,7 @@ local ScopeCaseOthers = Lpeg.V("scopecaseothers")
 local ScopeSwitch     = Lpeg.V("scopeswitch")
 --local OneLineExpression = Expression * (Space ^ 0 * Lpeg.P(";") * Space ^ 0 * Expression) ^ 0
 local OneLineExpression = ScopeInner
+local Condition = Lpeg.Ct(((Expression) + (Lpeg.P("(") * Expression * Lpeg.P(")"))) * (Space ^ 0 * Comment1) ^ -1)
 local ScopeTbl  = {
   scope1    = Lpeg.Ct((Lpeg.Cg(Alternative, "alter") * SepEx ^ 0 * Lpeg.P(":") * SepEx ^ 0) ^ -1 * Scope2),
   scope2    = ScopeBegin * Lpeg.Ct(ScopeInner ^ 0) * (SepEx + Sep2) ^ 0 * ScopeEnd,
@@ -256,17 +257,17 @@ local ScopeTbl  = {
   + Empty) * (SepEx + Sep2) ^ 0),
   scopeparallel = Lpeg.Ct((Lpeg.P("parallel") + Lpeg.P("void")) * SepEx ^ 1 * Lpeg.Cg(Lpeg.Ct(Expression), "parallel")),
   scopeif   = ScopeIfIf * ((SepEx + Sep2) ^ 0 * ScopeIfElseIf) ^ 0 * ((SepEx + Sep2) ^ 0 * ScopeIfElse) ^ -1,
-  scopeifif = Lpeg.Ct(Space ^ 0 * Lpeg.P("if") * Space ^ 0 * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * Lpeg.Cg((SepEx + Sep2) ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression * (Sep + Sep2) ^ 0)), "scope_if")),
-  scopeifelseif = Lpeg.Ct(Space ^ 0 * Lpeg.P("elseif") * Space ^ 0 * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * Lpeg.Cg(SepEx ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)), "scope_elseif")),
+  scopeifif = Lpeg.Ct(Space ^ 0 * Lpeg.P("if") * Space ^ 0 * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Condition, "condition") * Space ^ 0 * Lpeg.Cg((SepEx + Sep2) ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression * (Sep + Sep2) ^ 0)), "scope_if")),
+  scopeifelseif = Lpeg.Ct(Space ^ 0 * Lpeg.P("elseif") * Space ^ 0 * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Condition, "condition") * Lpeg.Cg(SepEx ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)), "scope_elseif")),
   scopeifelse = Lpeg.Ct(Space ^ 0 * Lpeg.P("else") * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)) + (SepEx + Sep2) ^ 0 * Scope1, "scope_else")),
-  scopewhile  = Lpeg.Ct(Space ^ 0 * Lpeg.P("while") * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * Expression) + (Space ^ 0 * Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * (SepEx + Sep2) ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_while")),
+  scopewhile  = Lpeg.Ct(Space ^ 0 * Lpeg.P("while") * Space ^ 0 * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Condition, "condition") * (SepEx + Sep2) ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_while")),
   scopefor  = Lpeg.Ct(Space ^ 0 * Lpeg.P("for") * Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * ForCondition) + (Space ^ 0 * Lpeg.P("(") * ForCondition * Lpeg.P(")"))), "condition") * (SepEx + Sep2) ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_for")),
   scopeforeach  = Lpeg.Ct(Space ^ 0 * Lpeg.P("foreach") * Lpeg.Cg(Lpeg.Ct((Space ^ 1 * ForeachCondition) + (Space ^ 0 * Lpeg.P("(") * ForeachCondition * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_foreach")),
   scopecase   = ScopeCaseCase,
-  scopecasecase = Lpeg.Ct(Space ^ 0 * Lpeg.P("case") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(SepEx ^ 0 * Lpeg.P("{" ) * Lpeg.Ct((SepEx ^ 0 * ScopeCaseWhen + SepEx ^ 0 * (Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(ScopeInner, "case_raw")))) ^ 0 * (SepEx ^ 0 * ScopeCaseOthers) ^ -1 * SepEx ^ 0 * Lpeg.Ct((Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * ScopeInner)) ^ 0)) * SepEx ^ 0 * Lpeg.P("}"), "scope_case")),
-  scopecasewhen = Lpeg.Ct(Space ^ 0 * Lpeg.P("when") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(WhenCondition + (Lpeg.P("(") * WhenCondition * Lpeg.P(")"))), "condition") * Lpeg.Cg(SepEx ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression * (Sep + Sep2) ^ 0)), "scope_when")),
+  scopecasecase = Lpeg.Ct(Space ^ 0 * Lpeg.P("case") * Space ^ 0 * Lpeg.Cg(Condition, "condition") * SepEx ^ 0 * Lpeg.Cg(SepEx ^ 0 * Lpeg.P("{" ) * Lpeg.Ct((SepEx ^ 0 * ScopeCaseWhen + SepEx ^ 0 * (Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(ScopeInner, "case_raw")))) ^ 0 * (SepEx ^ 0 * ScopeCaseOthers) ^ -1 * SepEx ^ 0 * Lpeg.Ct((Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * ScopeInner)) ^ 0)) * SepEx ^ 0 * Lpeg.P("}"), "scope_case")),
+  scopecasewhen = Lpeg.Ct(Space ^ 0 * Lpeg.P("when") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct((WhenCondition * Space ^ 0 * Comment1 ^ -1) + (Lpeg.P("(") * WhenCondition * Lpeg.P(")"))), "condition") * Lpeg.Cg(SepEx ^ 0 * Scope1 + Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression * (Sep + Sep2) ^ 0)), "scope_when")),
   scopecaseothers = Lpeg.Ct(Space ^ 0 * Lpeg.P("others") * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Space ^ 0 * ((Space ^ 0 * Comment1) + Sep + Sep2) ^ 1 * Space ^ 0 * OneLineExpression)) + SepEx ^ 0 * Scope1, "scope_others")),
-  scopeswitch = Lpeg.Ct(Space ^ 0 * Lpeg.P("switch") * Space ^ 0 * Lpeg.Cg(Lpeg.Ct(Expression + (Lpeg.P("(") * Expression * Lpeg.P(")"))), "condition") * SepEx ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_switch")),
+  scopeswitch = Lpeg.Ct(Space ^ 0 * Lpeg.P("switch") * Space ^ 0 * Lpeg.Cg(Condition, "condition") * SepEx ^ 0 * Lpeg.Cg(Scope1 + Lpeg.Ct(Lpeg.Ct(OneLineExpression)), "scope_switch")),
 }
 local Scope = Lpeg.P({
   Scope1,
