@@ -74,7 +74,7 @@ local Continue  = Lpeg.Ct(Space ^ 0 * Lpeg.Cg(Lpeg.P("continue"), "special"))
 
 local StringSep1 = Lpeg.P("\"")
 local StringSep2 = Lpeg.P("'")
-local String1_2 = (StringSep2 * Lpeg.Cg(((Lpeg.P("/") * Space ^ 0 * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Char ^ 0, "comment")) * NL) ^ 0) + (Lpeg.B( - StringSep2) * Char)) ^ 0, "string") * StringSep2)
+local String1_2 = (StringSep2 * Lpeg.Cg(((Lpeg.P("/") * Space ^ 0 * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Char ^ 0, "comment")) * NL) ^ 0) + (Lpeg.B( - StringSep2) * Char) + (StringSep2 * StringSep2)) ^ 0, "string") * StringSep2)
 local String2_2 = (Lpeg.P("<<") * StringSep2 * Lpeg.Cg(((NL) + (Lpeg.B( - (StringSep2 * Lpeg.P(">>"))) * Char)) ^ 0, "string") * StringSep2 * Lpeg.P(">>"))
 
 local ExpSep  = (Space) ^ 0
@@ -132,7 +132,7 @@ local ExpressionInString  = Lpeg.P({
   + (Lpeg.P("(") * ExpSep * ExpS1 * ExpSep * Lpeg.P(")")) * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index")) ^ 0), "append")
   + ((Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(GlobalVariable, "g"))
     * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct( ExpSep * (Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(ExpS1) * ExpSep * Lpeg.P("]")), "index")
-      + (Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(ExpS1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(ExpS1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")))) ^ 0), "append"))
+      + (Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * ((ExpSep * Lpeg.Ct(ExpS1) * ExpSep) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")))) ^ 0), "append"))
   + (Lpeg.P("(") * ExpSep * ExpS1 * ExpSep * Lpeg.P(")"))),
 })
 local String1_1 = (StringSep1 * Lpeg.Cg(Lpeg.Ct(((Lpeg.P("%(") * ExpSep * (ExpressionInString) * ExpSep * Lpeg.P(")")) + Lpeg.Ct(Lpeg.Cg((((Lpeg.P("/") * Space ^ 0 * NL * (Empty ^ 0) * (Space ^ 0 * Lpeg.P("//") * Lpeg.Ct(Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(Char ^ 0, "comment")) * NL) ^ 0)) + Lpeg.B( - (StringSep1 + Lpeg.P("%("))) * Char) ^ 1, "text"))) ^ 0), "string") * StringSep1)
@@ -174,7 +174,7 @@ local ExpTbl  =
   + (Lpeg.P("(") * ExpSep * Exp1 * ExpSep * Lpeg.P(")")) * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct(Lpeg.Cg((ExpSep * Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index")) ^ 0), "append")
   + (Lpeg.Cg(Lpeg.Cp(), "pos") * Lpeg.Cg(GlobalVariable, "g"))
     * Lpeg.Cg(Lpeg.Ct(Lpeg.Ct( ExpSep * (Lpeg.Cg((Lpeg.P("[") * ExpSep * Lpeg.Ct(Exp1) * ExpSep * Lpeg.P("]")), "index")
-      + (Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * (ExpSep * Lpeg.Ct(Exp1) * (ExpSep * Lpeg.P(",") * ExpSep * Lpeg.Ct(Exp1)) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")))) ^ 0), "append")
+      + (Lpeg.Cg(Lpeg.Ct(Lpeg.P("(") * ((ExpSep * Lpeg.Ct(Exp1) * ExpSep) ^ 0) ^ -1 * ExpSep * Lpeg.P(")")), "func")))) ^ 0), "append")
       + (Lpeg.P("(") * ExpSep * Exp1 * ExpSep * Lpeg.P(")"))),
   stringv = String1 + String2,
   string2 = String2_1 + String2_2,
