@@ -24,7 +24,7 @@ export	NM	= llvm-nm
 LD					= clang++
 LDFLAGS			= -shared
 
-SRCS				= yayalint.lua ayc_decoder.lua user_defined.lua levenshtein.lua class/init.lua conv/init.lua conv/windows_wrap.lua string_buffer/init.lua path/path.lua lpeglabel/relabel.lua argparse/src/argparse.lua
+SRCS				= yayalint.lua ayc_decoder.lua user_defined.lua peg.lua tag.lua var_info.lua levenshtein.lua class/init.lua conv/init.lua conv/windows_wrap.lua conv/iconv.lua string_buffer/init.lua path/path.lua lpeglabel/relabel.lua argparse/src/argparse.lua
 OBJS				= conv/windows.a lpeglabel.a lfs.a lua54.a
 ALL					= all
 
