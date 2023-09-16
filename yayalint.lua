@@ -185,7 +185,9 @@ function Lint.generateOutput()
         table.insert(t, string.format("%s\t%s", v.kind, v.filename))
       end
     elseif v.kind == Lint.Warning.SyntaxError then
-      table.insert(t, string.format("%s\t%s", v.kind, v.filename))
+      table.insert(t, string.format("%s\t%s\tat\t%s\tpos:\t%d:%d",
+        v.kind, v.name, v.filename, v.line, v.col
+      ))
     elseif v.kind == Lint.Warning.UndefinedVar or v.kind == Lint.Warning.UndefinedFunc then
       table.insert(t, string.format("%s\t%s\tat\t%s\tpos:\t%d:%d\tdid you mean:\t%s",
         v.kind, v.name, v.filename, v.line, v.col, v.suggestion
