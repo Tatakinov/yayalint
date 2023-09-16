@@ -59,6 +59,7 @@ local Lint  = {
     UnusedFunc    = "unused function:",
     UndefinedVar  = "read undefined variable:",
     UndefinedFunc = "read undefined function:",
+    Redefinition  = "redefinition:",
     AssignInCond  = "assignment operator exists in conditional statement:",
     OddInCase     = "case statement contains a clause that is neither a when clause nor others clause:",
   }
@@ -726,6 +727,31 @@ function interpret.main(data)
     return
   end
   for k, v in pairs(gv:data()) do
+    if v.is_func then
+      function checkRedefinition(list, lint_info, do_lint)
+        local is_defined  = false
+        for _, v in ipairs(list) do
+          if v.write then
+            if do_lint then
+              -- redefinition
+              Lint.appendWarning({
+                kind  = Lint.Warning.Redefinition,
+                name  = lint_info.name,
+                filename  = v.filename,
+                line  = v.line,
+                col   = v.col,
+              })
+            else
+              if is_defined then
+                return checkRedefinition(list, lint_info, true)
+              end
+              is_defined = true
+            end
+          end
+        end
+      end
+      checkRedefinition(v.pos, {name  = k}, false)
+    end
     if v.write and not(v.read) then
       for _, pos in ipairs(v.pos) do
         if v.is_func then
