@@ -30,6 +30,8 @@ function M:add(key, pos, opt)
   for k, v in pairs(opt) do
     self._data[key][k]  = v
   end
+  pos.write = opt.write
+  pos.read  = opt.read
   table.insert(self._data[key].pos, pos)
   return self._data[key]
 end
