@@ -82,6 +82,7 @@ Options:
    -d, --noundefined     未定義の変数に関する情報を出力しない
    -l, --nolocal         ローカル変数に関する情報を出力しない
    -g, --noglobal        グローバル変数に関する情報を出力しない
+   -a, --noambiguous     変数/関数名の訂正を行わない
    -h, --help            ヘルプの表示
 ```
 

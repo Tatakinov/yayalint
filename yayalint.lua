@@ -38,7 +38,7 @@ local Error = {
 
 
 local parser  = ArgParse("yayalint", "YAYA linter")
-parser:argument("path", "Path of the folder containing yaya.dll")
+parser:argument("path", "Path to yaya.txt(aya.txt)")
 parser:flag("-F --nofile")
 parser:flag("-s --nosyntaxerror")
 parser:flag("-w --nowarning")
